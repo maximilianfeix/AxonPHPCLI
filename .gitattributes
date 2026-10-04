@@ -1,0 +1,17 @@
+* text=auto eol=lf
+
+*.php diff=php
+*.svg text
+
+# Kept out of the archives Composer downloads with --prefer-dist
+/.editorconfig          export-ignore
+/.gitattributes         export-ignore
+/.github                export-ignore
+/.gitignore             export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/CONTRIBUTING.md        export-ignore
+/SECURITY.md            export-ignore
+/docs                   export-ignore
+/phpstan.neon.dist      export-ignore
+/phpunit.xml.dist       export-ignore
+/tests                  export-ignore

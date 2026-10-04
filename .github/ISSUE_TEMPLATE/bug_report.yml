@@ -1,0 +1,30 @@
+name: Bug report
+description: The generated pipeline is wrong, or the command misbehaves
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, and what did you get instead?
+    validations:
+      required: true
+  - type: textarea
+    id: composer
+    attributes:
+      label: Relevant parts of composer.json
+      description: The `require` and `require-dev` sections are usually enough.
+      render: json
+  - type: textarea
+    id: output
+    attributes:
+      label: Command output
+      description: Run the command again with `--dry-run -vvv` and paste the output.
+      render: shell
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Output of `vendor/bin/axonphp --version` and `php --version`, and your operating system.
+    validations:
+      required: true
