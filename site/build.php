@@ -14,7 +14,10 @@ declare(strict_types=1);
  *   composer site:check    exit with 1 when docs/index.html is out of date
  */
 
+use AxonPHP\Cli\Application;
 use AxonPHP\Cli\Project\Project;
+use AxonPHP\Cli\Project\ProjectInspector;
+use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolCatalog;
 use AxonPHP\Cli\Project\ToolType;
 use AxonPHP\Cli\Provider\PipelineOptions;
@@ -65,26 +68,157 @@ function highlightYaml(string $yaml): string
     return implode("\n", $lines);
 }
 
-$packages = ['phpunit/phpunit', 'phpstan/phpstan', 'friendsofphp/php-cs-fixer'];
-$project = new Project(
-    ['8.2', '8.3', '8.4', '8.5'],
-    ['intl'],
-    (new ToolCatalog())->detect($packages),
-    true,
-    '^8.2',
-    'acme/app',
-);
-$options = new PipelineOptions(['main'], coverage: true);
+/**
+ * Highlights the keys and string values of pretty-printed JSON.
+ */
+function highlightJson(string $json): string
+{
+    $lines = [];
 
-$examples = [];
+    foreach (explode("\n", $json) as $line) {
+        $parts = preg_split('/("(?:[^"\\\]|\\\.)*")(\s*:)?/', $line, -1, \PREG_SPLIT_DELIM_CAPTURE);
+        $parts = false === $parts ? [$line] : $parts;
+        $html = '';
 
-foreach (ProviderRegistry::default()->all() as $provider) {
-    $examples[] = [
-        'name' => $provider->name(),
-        'label' => $provider->label(),
-        'path' => $provider->path(),
-        'yaml' => highlightYaml($provider->render($project, $options)),
+        // Each match contributes the quoted string and, for keys, the colon that follows it.
+        for ($index = 0, $count = count($parts); $index < $count; ++$index) {
+            if (1 !== $index % 3) {
+                $html .= e($parts[$index]);
+
+                continue;
+            }
+
+            $isKey = '' !== ($parts[$index + 1] ?? '');
+            $html .= sprintf('<span class="%s">%s</span>', $isKey ? 'k' : 's', e($parts[$index]));
+        }
+
+        $lines[] = $html;
+    }
+
+    return implode("\n", $lines);
+}
+
+/**
+ * Runs the real inspection on a composer.json written to a temporary directory.
+ *
+ * @param ?array<string, mixed> $manifest null for a project without composer.json
+ */
+function inspectManifest(ProjectInspector $inspector, ?array $manifest): Project
+{
+    $directory = sys_get_temp_dir().\DIRECTORY_SEPARATOR.'axonphp-site-'.bin2hex(random_bytes(6));
+    $file = $directory.\DIRECTORY_SEPARATOR.'composer.json';
+    mkdir($directory);
+
+    try {
+        if (null !== $manifest) {
+            file_put_contents($file, json_encode($manifest, \JSON_THROW_ON_ERROR));
+        }
+
+        return $inspector->inspect($directory);
+    } finally {
+        if (is_file($file)) {
+            unlink($file);
+        }
+
+        rmdir($directory);
+    }
+}
+
+// The projects of the playground. Each one goes through the same inspection and rendering as a real project.
+$definitions = [
+    [
+        'id' => 'library',
+        'label' => 'Library',
+        'about' => 'A package that supports four PHP versions, measures coverage and tests its lowest dependencies.',
+        'manifest' => [
+            'name' => 'acme/library',
+            'require' => ['php' => '^8.2', 'ext-intl' => '*'],
+            'require-dev' => [
+                'phpunit/phpunit' => '^12.0',
+                'phpstan/phpstan' => '^2.0',
+                'friendsofphp/php-cs-fixer' => '^3.0',
+            ],
+            'extra' => ['axonphp' => ['min-coverage' => 90, 'lowest' => true]],
+        ],
+    ],
+    [
+        'id' => 'laravel',
+        'label' => 'Laravel app',
+        'about' => 'Pest, Larastan and Pint, with a security audit before anything else runs.',
+        'manifest' => [
+            'name' => 'acme/shop',
+            'require' => ['php' => '^8.3', 'ext-pdo' => '*', 'laravel/framework' => '^12.0'],
+            'require-dev' => [
+                'pestphp/pest' => '^4.0',
+                'larastan/larastan' => '^3.0',
+                'laravel/pint' => '^1.0',
+            ],
+            'extra' => ['axonphp' => ['audit' => true]],
+        ],
+    ],
+    [
+        'id' => 'symfony',
+        'label' => 'Symfony app',
+        'about' => 'One PHP version, architecture rules, dependency checks and two long-lived branches.',
+        'manifest' => [
+            'name' => 'acme/api',
+            'require' => ['php' => '>=8.4', 'ext-ctype' => '*', 'ext-iconv' => '*', 'symfony/framework-bundle' => '^7.3'],
+            'require-dev' => [
+                'phpunit/phpunit' => '^12.0',
+                'phpstan/phpstan' => '^2.0',
+                'deptrac/deptrac' => '^3.0',
+                'friendsofphp/php-cs-fixer' => '^3.0',
+                'icanhazstring/composer-unused' => '^0.9',
+            ],
+            'extra' => ['axonphp' => ['branches' => ['main', 'develop'], 'audit' => true]],
+        ],
+    ],
+    [
+        'id' => 'plain',
+        'label' => 'No Composer',
+        'about' => 'Nothing to detect yet. The pipeline lints every PHP file, so it is useful from day one.',
+        'manifest' => null,
+    ],
+];
+
+$inspector = new ProjectInspector();
+$providers = ProviderRegistry::default()->all();
+$presets = [];
+
+foreach ($definitions as $definition) {
+    $project = inspectManifest($inspector, $definition['manifest']);
+    $settings = $project->settings;
+    $options = new PipelineOptions(
+        $settings->branches ?? ['main'],
+        $settings->coverage ?? null !== $settings->minCoverage,
+        $settings->lowest ?? false,
+        $settings->audit ?? false,
+        $settings->minCoverage,
+    );
+
+    $outputs = [];
+
+    foreach ($providers as $provider) {
+        $outputs[$provider->name()] = highlightYaml($provider->render($project, $options));
+    }
+
+    $presets[] = [
+        'id' => $definition['id'],
+        'label' => $definition['label'],
+        'about' => $definition['about'],
+        'manifest' => null === $definition['manifest']
+            ? null
+            : highlightJson(json_encode($definition['manifest'], \JSON_THROW_ON_ERROR | \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES)),
+        'versions' => $project->phpVersions,
+        'tools' => array_map(static fn (Tool $tool): string => $tool->name, $project->tools),
+        'outputs' => $outputs,
     ];
+}
+
+$services = [];
+
+foreach ($providers as $provider) {
+    $services[] = ['name' => $provider->name(), 'label' => $provider->label(), 'path' => $provider->path()];
 }
 
 $tools = [];
@@ -92,29 +226,38 @@ $tools = [];
 foreach (ToolCatalog::definitions() as [$candidates, $tool]) {
     $tools[] = [
         'name' => $tool->name,
-        'type' => $tool->type->label(),
+        'type' => $tool->type->value,
+        'typeLabel' => $tool->type->label(),
         'packages' => $candidates,
         'command' => $tool->command,
     ];
 }
 
-// The rows "ci:init" prints for the example project, shown in the terminal at the top of the page.
+$toolTypes = [];
+
+foreach (ToolType::cases() as $type) {
+    $toolTypes[$type->value] = $type->label();
+}
+
+// The rows "ci:init" prints for the first project, shown in the terminal at the top of the page.
+$library = inspectManifest($inspector, $definitions[0]['manifest']);
 $toolNames = static fn (ToolType $type): string => implode(', ', array_map(
-    static fn ($tool): string => $tool->name,
-    $project->tools($type),
+    static fn (Tool $tool): string => $tool->name,
+    $library->tools($type),
 ));
 
 $summary = [
-    ['Project', '/home/you/acme-app', ''],
-    ['PHP versions', implode(', ', $project->phpVersions), sprintf('(from "php": "%s")', (string) $project->phpConstraint)],
-    ['Extensions', implode(', ', $project->extensions), ''],
+    ['Project', '/home/you/acme-library', ''],
+    ['PHP versions', implode(', ', $library->phpVersions), sprintf('(from "php": "%s")', (string) $library->phpConstraint)],
+    ['Extensions', implode(', ', $library->extensions), ''],
     ['Tests', $toolNames(ToolType::Tests), ''],
     ['Static analysis', $toolNames(ToolType::StaticAnalysis), ''],
     ['Code style', $toolNames(ToolType::CodeStyle), ''],
-    ['Branches', implode(', ', $options->branches), ''],
-    ['Extras', 'coverage', ''],
+    ['Branches', 'main', ''],
+    ['Extras', 'coverage (at least 90%), lowest dependencies', ''],
 ];
 
+$version = Application::VERSION;
 $repository = 'https://github.com/maximilianfeix/AxonPHPCLI';
 
 ob_start();

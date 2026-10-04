@@ -16,7 +16,7 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 final class Application extends ConsoleApplication
 {
     public const NAME = 'AxonPHP CLI';
-    public const VERSION = '0.4.0';
+    public const VERSION = '0.5.0';
 
     public function __construct()
     {

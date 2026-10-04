@@ -17,6 +17,6 @@ return (new Config())
     ->setFinder(
         (new Finder())
             ->in([__DIR__.'/src', __DIR__.'/tests'])
-            ->append([__DIR__.'/bin/axonphp', __DIR__.'/site/build.php', __FILE__])
+            ->append([__DIR__.'/bin/axonphp', __DIR__.'/site/build.php', __DIR__.'/tools/build-phar.php', __FILE__])
     )
 ;
