@@ -58,7 +58,11 @@ final class CiCheckCommandTest extends TestCase
         self::assertStringContainsString('.github/workflows/ci.yml is out of date', $display);
         self::assertStringContainsString('+   quality:', $display);
         self::assertStringContainsString('+         run: vendor/bin/phpstan analyse --no-progress', $display);
-        self::assertStringContainsString('Run "ci:init --force" to regenerate it.', $display);
+        // The closing message wraps on narrow terminals.
+        self::assertStringContainsString(
+            'Run "ci:init --force" to regenerate it.',
+            (string) preg_replace('/\s+/', ' ', $display),
+        );
     }
 
     public function testFailsWhenTheOptionsDiffer(): void
