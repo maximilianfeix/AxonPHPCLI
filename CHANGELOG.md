@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-04
+
+### Fixed
+
+- The PHAR left out the resource files of its dependencies and failed to start
+  with symfony/console 7, so 0.5.0 was published without one. This release is
+  the first with `axonphp.phar` attached.
+
 ## [0.5.0] - 2026-10-04
 
 ### Added
@@ -139,7 +147,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ci:init github` command that copies a static GitHub Actions workflow into
   the project.
 
-[Unreleased]: https://github.com/maximilianfeix/AxonPHPCLI/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/maximilianfeix/AxonPHPCLI/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.5.1
 [0.5.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.5.0
 [0.4.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.4.0
 [0.3.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.3.0

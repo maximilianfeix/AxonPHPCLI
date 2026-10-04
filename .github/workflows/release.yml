@@ -44,6 +44,7 @@ jobs:
         run: |
           php build/axonphp.phar --version | grep -F "${TAG#v}"
           php build/axonphp.phar ci:init github --dry-run > /dev/null
+          php build/axonphp.phar completion bash > /dev/null
           php build/axonphp.phar ci:check
 
       - name: Attach the PHAR and its checksum
