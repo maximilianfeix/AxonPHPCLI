@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AxonPHP\Cli\Command;
 
+use AxonPHP\Cli\Diff\LineDiff;
 use AxonPHP\Cli\Exception\InvalidInputException;
 use AxonPHP\Cli\Exception\ProjectException;
 use AxonPHP\Cli\Project\ProjectInspector;
@@ -11,9 +12,11 @@ use AxonPHP\Cli\Provider\PipelineOptions;
 use AxonPHP\Cli\Provider\Provider;
 use AxonPHP\Cli\Provider\ProviderRegistry;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Shared input handling for the commands that inspect a project or build its pipeline.
@@ -72,6 +75,12 @@ abstract class PipelineCommand extends Command
                 null,
                 InputOption::VALUE_NEGATABLE,
                 'Measure code coverage on the newest PHP version',
+            )
+            ->addOption(
+                'min-coverage',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Fail the coverage job below this line coverage in percent; implies --coverage',
             )
             ->addOption(
                 'lowest',
@@ -136,11 +145,15 @@ abstract class PipelineCommand extends Command
 
         $branches = $this->values($input, 'branch');
 
+        $minCoverage = $this->percentage($input, 'min-coverage') ?? $settings->minCoverage;
+
         $options = new PipelineOptions(
             $this->branches([] !== $branches ? $branches : $settings->branches ?? ['main']),
-            $this->flag($input, 'coverage') ?? $settings->coverage ?? false,
+            // Asking for a minimum only makes sense with a coverage job, so it switches one on.
+            $this->flag($input, 'coverage') ?? $settings->coverage ?? null !== $minCoverage,
             $this->flag($input, 'lowest') ?? $settings->lowest ?? false,
             $this->flag($input, 'audit') ?? $settings->audit ?? false,
+            $minCoverage,
         );
 
         return new PipelineContext($directory, $project, $options, $phpSource);
@@ -149,6 +162,82 @@ abstract class PipelineCommand extends Command
     protected function pipelineFile(string $directory, Provider $provider): string
     {
         return $directory.\DIRECTORY_SEPARATOR.str_replace('/', \DIRECTORY_SEPARATOR, $provider->path());
+    }
+
+    /**
+     * @return list<Provider> the provider passed as argument, or every provider with a pipeline file in the project
+     *
+     * @throws InvalidInputException
+     */
+    protected function requestedProviders(InputInterface $input, string $directory): array
+    {
+        $name = $input->getArgument('provider');
+
+        if (is_string($name) && '' !== $name) {
+            return [$this->providers->get($name)];
+        }
+
+        return array_values(array_filter(
+            $this->providers->all(),
+            fn (Provider $provider): bool => is_file($this->pipelineFile($directory, $provider)),
+        ));
+    }
+
+    /**
+     * Renders the pipeline and compares it with the file in the project.
+     */
+    protected function state(PipelineContext $context, Provider $provider): PipelineState
+    {
+        $file = $this->pipelineFile($context->directory, $provider);
+        $expected = $provider->render($context->project, $context->options);
+
+        if (!is_file($file)) {
+            return new PipelineState($provider, PipelineState::MISSING, $expected);
+        }
+
+        $diff = LineDiff::compare((string) file_get_contents($file), $expected);
+
+        return new PipelineState($provider, [] === $diff ? PipelineState::CURRENT : PipelineState::OUTDATED, $expected, $diff);
+    }
+
+    /**
+     * @param list<array{string, string}> $diff
+     */
+    protected function printDiff(OutputInterface $output, array $diff): void
+    {
+        $output->writeln('   <fg=red>- in your file</>  <fg=green>+ expected</>');
+
+        foreach ($diff as [$marker, $line]) {
+            $text = OutputFormatter::escape($line);
+
+            $output->writeln(match ($marker) {
+                LineDiff::REMOVED => sprintf('   <fg=red>- %s</>', $text),
+                LineDiff::ADDED => sprintf('   <fg=green>+ %s</>', $text),
+                LineDiff::GAP => '   <fg=gray>…</>',
+                default => sprintf('     %s', $text),
+            });
+        }
+    }
+
+    /**
+     * @throws ProjectException
+     */
+    protected function write(string $target, string $contents): void
+    {
+        $directory = dirname($target);
+
+        if (!is_dir($directory) && !@mkdir($directory, 0o777, true) && !is_dir($directory)) {
+            throw new ProjectException(sprintf('Could not create the directory "%s".', $directory));
+        }
+
+        // Write next to the target and swap it in, so a failed write never leaves a truncated pipeline behind.
+        $temporary = $target.'.'.bin2hex(random_bytes(4)).'.tmp';
+
+        if (strlen($contents) !== @file_put_contents($temporary, $contents) || !@rename($temporary, $target)) {
+            @unlink($temporary);
+
+            throw new ProjectException(sprintf('Could not write "%s".', $target));
+        }
     }
 
     /**
@@ -223,6 +312,26 @@ abstract class PipelineCommand extends Command
         }
 
         return array_values(array_unique($values));
+    }
+
+    /**
+     * @return ?float null when the option was not passed
+     *
+     * @throws InvalidInputException
+     */
+    private function percentage(InputInterface $input, string $option): ?float
+    {
+        $value = $input->getOption($option);
+
+        if (null === $value) {
+            return null;
+        }
+
+        if (!is_string($value) || !is_numeric($value) || (float) $value < 0 || (float) $value > 100) {
+            throw new InvalidInputException(sprintf('The --%s option needs a number from 0 to 100.', $option));
+        }
+
+        return (float) $value;
     }
 
     /**

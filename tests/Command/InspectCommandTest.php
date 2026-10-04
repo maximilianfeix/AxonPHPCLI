@@ -46,11 +46,12 @@ final class InspectCommandTest extends TestCase
                     ['name' => 'Pest', 'type' => 'tests', 'command' => 'vendor/bin/pest'],
                     ['name' => 'Rector', 'type' => 'static-analysis', 'command' => 'vendor/bin/rector process --dry-run'],
                 ],
-                'options' => ['branches' => ['main'], 'coverage' => true, 'lowest' => false, 'audit' => true],
+                'options' => ['branches' => ['main'], 'coverage' => true, 'min-coverage' => null, 'lowest' => false, 'audit' => true],
                 'pipelines' => [
                     ['provider' => 'github', 'label' => 'GitHub Actions', 'path' => '.github/workflows/ci.yml', 'exists' => false],
                     ['provider' => 'gitlab', 'label' => 'GitLab CI', 'path' => '.gitlab-ci.yml', 'exists' => true],
                     ['provider' => 'bitbucket', 'label' => 'Bitbucket Pipelines', 'path' => 'bitbucket-pipelines.yml', 'exists' => false],
+                    ['provider' => 'circleci', 'label' => 'CircleCI', 'path' => '.circleci/config.yml', 'exists' => false],
                 ],
             ],
             json_decode($tester->getDisplay(), true, 512, \JSON_THROW_ON_ERROR),
@@ -81,6 +82,23 @@ final class InspectCommandTest extends TestCase
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertStringContainsString('No composer.json found', $tester->getDisplay());
         self::assertStringContainsString('None detected.', $tester->getDisplay());
+    }
+
+    public function testShowsTheMinimumCoverage(): void
+    {
+        $tester = $this->tester();
+
+        $tester->execute(['--working-dir' => $this->createProject(self::MANIFEST), '--min-coverage' => '80']);
+
+        self::assertMatchesRegularExpression('/Minimum coverage\s+80%/', $tester->getDisplay());
+    }
+
+    public function testReportsAnUnreadableManifest(): void
+    {
+        $tester = $this->tester();
+
+        self::assertSame(Command::FAILURE, $tester->execute(['--working-dir' => $this->createProject('[]')]));
+        self::assertStringContainsString('must contain a JSON object', $tester->getDisplay());
     }
 
     public function testRejectsUnknownFormats(): void

@@ -6,6 +6,7 @@ namespace AxonPHP\Cli\Pipeline;
 
 use AxonPHP\Cli\Project\Project;
 use AxonPHP\Cli\Project\Tool;
+use AxonPHP\Cli\Project\ToolCatalog;
 use AxonPHP\Cli\Project\ToolType;
 use AxonPHP\Cli\Provider\PipelineOptions;
 
@@ -27,13 +28,15 @@ final readonly class Plan
     public const AUDIT_COMMAND = 'composer audit';
 
     /**
-     * @param list<string> $branches    branches whose pushes trigger the pipeline
-     * @param list<string> $extensions  PHP extensions to install, without the "ext-" prefix
-     * @param list<string> $phpVersions minor versions the tests run on, oldest first
-     * @param list<Step>   $quality     checks that run once, on the newest PHP version; no quality job when empty
-     * @param list<Step>   $tests       what runs on every PHP version
-     * @param bool         $lowest      also run the tests with the lowest allowed dependencies on the oldest PHP version
-     * @param ?Step        $coverage    runs the tests with a coverage driver and writes the Clover report
+     * @param list<string> $branches          branches whose pushes trigger the pipeline
+     * @param list<string> $extensions        PHP extensions to install, without the "ext-" prefix
+     * @param list<string> $phpVersions       minor versions the tests run on, oldest first
+     * @param list<Step>   $quality           checks that run once, on the newest PHP version; no quality job when empty
+     * @param list<Step>   $tests             what runs on every PHP version
+     * @param bool         $lowest            also run the tests with the lowest allowed dependencies on the oldest PHP version
+     * @param ?Step        $coverage          runs the tests with a coverage driver and writes the Clover report
+     * @param ?Step        $coverageThreshold fails when the Clover report shows too little coverage; null when
+     *                                        nothing is required or the coverage step enforces it itself
      */
     public function __construct(
         public array $branches,
@@ -46,6 +49,7 @@ final readonly class Plan
         public array $tests,
         public bool $lowest = false,
         public ?Step $coverage = null,
+        public ?Step $coverageThreshold = null,
     ) {}
 
     public static function from(Project $project, PipelineOptions $options): self
@@ -56,7 +60,7 @@ final readonly class Plan
             $quality[] = new Step('Security audit (Composer)', self::AUDIT_COMMAND);
         }
 
-        foreach ($project->tools(ToolType::StaticAnalysis, ToolType::CodeStyle) as $tool) {
+        foreach ($project->tools(ToolType::StaticAnalysis, ToolType::CodeStyle, ToolType::Dependencies) as $tool) {
             $quality[] = self::toolStep($tool);
         }
 
@@ -67,6 +71,21 @@ final readonly class Plan
         }
 
         $coverageTool = $options->coverage ? $project->coverageTool() : null;
+        $coverage = null;
+        $threshold = null;
+
+        if (null !== $coverageTool) {
+            $command = (string) $coverageTool->coverageCommand;
+            $minimum = null === $options->minCoverage ? null : self::percentage($options->minCoverage);
+
+            if (null !== $minimum && null !== $coverageTool->minimumOption) {
+                $command .= sprintf(' %s=%s', $coverageTool->minimumOption, $minimum);
+            } elseif (null !== $minimum) {
+                $threshold = new Step(sprintf('Require %s%% line coverage', $minimum), self::thresholdCommand($minimum));
+            }
+
+            $coverage = new Step(sprintf('Code coverage (%s)', $coverageTool->name), $command);
+        }
 
         return new self(
             $options->branches,
@@ -78,10 +97,33 @@ final readonly class Plan
             $quality,
             $tests,
             $options->lowest && $project->usesComposer,
-            null === $coverageTool ? null : new Step(
-                sprintf('Code coverage (%s)', $coverageTool->name),
-                (string) $coverageTool->coverageCommand,
-            ),
+            $coverage,
+            $threshold,
+        );
+    }
+
+    /**
+     * Formats a percentage without trailing zeros: 100.0 becomes "100", 92.5 stays "92.5".
+     */
+    public static function percentage(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+    }
+
+    /**
+     * A check of the Clover report for test runners that cannot enforce a minimum themselves.
+     *
+     * The command is emitted as a plain YAML scalar, so it must not contain ": " or " #".
+     */
+    public static function thresholdCommand(string $minimum): string
+    {
+        return sprintf(
+            'php -r \'$m = simplexml_load_file("%1$s")->project->metrics;'
+            .' $c = 100 * (int) $m["coveredstatements"] / max(1, (int) $m["statements"]);'
+            .' printf("Line coverage %%.2f%%%%, required %2$s%%%%\n", $c);'
+            .' exit((int) ($c < %2$s));\'',
+            ToolCatalog::COVERAGE_REPORT,
+            $minimum,
         );
     }
 

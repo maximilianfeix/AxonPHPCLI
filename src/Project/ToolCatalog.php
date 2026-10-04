@@ -57,7 +57,7 @@ final class ToolCatalog
         return [
             [
                 ['pestphp/pest'],
-                new Tool('Pest', ToolType::Tests, $bin('pest'), $bin('pest').' --coverage'.$clover),
+                new Tool('Pest', ToolType::Tests, $bin('pest'), $bin('pest').' --coverage'.$clover, '--min'),
             ],
             [['codeception/codeception'], new Tool('Codeception', ToolType::Tests, $bin('codecept').' run')],
             [
@@ -75,6 +75,7 @@ final class ToolCatalog
                 ['deptrac/deptrac', 'qossmic/deptrac-shim'],
                 new Tool('Deptrac', ToolType::StaticAnalysis, $bin('deptrac').' analyse --no-progress'),
             ],
+            [['phparkitect/phparkitect'], new Tool('PHPArkitect', ToolType::StaticAnalysis, $bin('phparkitect').' check')],
             [
                 ['friendsofphp/php-cs-fixer', 'php-cs-fixer/shim'],
                 new Tool('PHP-CS-Fixer', ToolType::CodeStyle, $bin('php-cs-fixer').' check --diff'),
@@ -82,6 +83,23 @@ final class ToolCatalog
             [['laravel/pint'], new Tool('Pint', ToolType::CodeStyle, $bin('pint').' --test')],
             [['symplify/easy-coding-standard'], new Tool('ECS', ToolType::CodeStyle, $bin('ecs').' check')],
             [['squizlabs/php_codesniffer'], new Tool('PHP_CodeSniffer', ToolType::CodeStyle, $bin('phpcs'))],
+            [['vincentlanglet/twig-cs-fixer'], new Tool('Twig-CS-Fixer', ToolType::CodeStyle, $bin('twig-cs-fixer').' lint')],
+            [
+                ['ergebnis/composer-normalize'],
+                new Tool('Composer Normalize', ToolType::Dependencies, 'composer normalize --dry-run'),
+            ],
+            [
+                ['maglnet/composer-require-checker'],
+                new Tool('Composer Require Checker', ToolType::Dependencies, $bin('composer-require-checker').' check'),
+            ],
+            [
+                ['icanhazstring/composer-unused'],
+                new Tool('Composer Unused', ToolType::Dependencies, $bin('composer-unused').' --no-progress'),
+            ],
+            [
+                ['shipmonk/composer-dependency-analyser'],
+                new Tool('Composer Dependency Analyser', ToolType::Dependencies, $bin('composer-dependency-analyser')),
+            ],
         ];
     }
 }

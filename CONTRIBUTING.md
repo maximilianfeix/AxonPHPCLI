@@ -30,6 +30,7 @@ composer check
 | Command           | What it does                      |
 | ----------------- | --------------------------------- |
 | `composer test`   | Runs the PHPUnit test suite       |
+| `composer coverage` | Runs the tests and prints the line coverage (needs Xdebug or PCOV) |
 | `composer stan`   | Runs PHPStan at the maximum level |
 | `composer cs`     | Checks the code style             |
 | `composer cs:fix` | Fixes the code style              |
@@ -41,7 +42,8 @@ composer check
 | Path            | Responsibility                                                       |
 | --------------- | -------------------------------------------------------------------- |
 | `src/Project/`  | Reads `composer.json` and describes the project (`ProjectInspector`) |
-| `src/Provider/` | Renders a pipeline for one CI service from a `Project`               |
+| `src/Pipeline/` | Decides which jobs a pipeline has and what they run (`Plan`)         |
+| `src/Provider/` | Translates a `Plan` into the YAML of one CI service                  |
 | `src/Command/`  | The console commands: input validation, output, writing the file     |
 | `src/Diff/`     | The line diff printed by `ci:check`                                  |
 | `site/`         | Template and build script for the website in `docs/`                 |
@@ -65,6 +67,7 @@ website.
 ## Pull requests
 
 - Branch from `develop` and open the pull request against `develop`.
-- Keep a pull request to one change, and add tests for new behaviour.
+- Keep a pull request to one change, and add tests for new behaviour. CI
+  requires 100% line coverage of `src/`.
 - Add a line to the "Unreleased" section of `CHANGELOG.md` for anything users
   will notice.

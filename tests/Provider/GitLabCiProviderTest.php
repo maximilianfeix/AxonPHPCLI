@@ -123,7 +123,7 @@ final class GitLabCiProviderTest extends TestCase
                 'image' => 'php:8.4-cli',
                 'script' => ['install-php-extensions pcov', 'vendor/bin/phpunit --coverage-clover=coverage.xml'],
                 'coverage' => '/^\s*(?:Lines|Total):\s*\d+\.\d+\s*%/',
-                'artifacts' => ['paths' => ['coverage.xml']],
+                'artifacts' => ['when' => 'always', 'paths' => ['coverage.xml']],
             ],
             self::yaml($pipeline, 'coverage'),
         );

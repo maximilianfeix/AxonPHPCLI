@@ -65,7 +65,11 @@ final class BitbucketPipelinesProvider implements Provider
                 'coverage',
                 'Code coverage',
                 $plan->latestPhp,
-                [Yaml::PCOV_COMMAND, $plan->coverage->command],
+                [
+                    Yaml::PCOV_COMMAND,
+                    $plan->coverage->command,
+                    ...(null === $plan->coverageThreshold ? [] : [$plan->coverageThreshold->command]),
+                ],
             );
         }
 

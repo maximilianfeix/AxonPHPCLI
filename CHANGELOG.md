@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-04
+
+### Added
+
+- `ci:update` command: rewrites every pipeline in the project that is out of
+  date and leaves the others alone. `--dry-run` shows the difference only.
+- `tools` command: lists the supported tools with the packages that trigger
+  them and the commands they run, and the supported providers, as text or JSON.
+- CircleCI provider (`ci:init circleci`).
+- `--min-coverage <percent>` and `extra.axonphp.min-coverage`: the coverage job
+  fails below that line coverage. Setting it switches the coverage job on.
+- `ci:check --format json` for scripts and `--format github` to annotate the
+  pipeline file in a pull request.
+- Detection of PHPArkitect, Twig-CS-Fixer, Composer Normalize, Composer Require
+  Checker, Composer Unused and Composer Dependency Analyser. Dependency checks
+  are a tool type of their own and run in the quality job.
+
+### Changed
+
+- `ci:check` points to `ci:update` instead of `ci:init --force`.
+- GitLab keeps the coverage report as an artifact when the job fails.
+- The providers render a shared `Plan` instead of each deciding which jobs a
+  pipeline has. Generated pipelines are otherwise unchanged.
+- The shell commands moved from `Provider\Yaml` to `Pipeline\Plan`.
+- This repository requires 100% line coverage in CI.
+
 ## [0.3.0] - 2026-10-04
 
 ### Added
@@ -97,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ci:init github` command that copies a static GitHub Actions workflow into
   the project.
 
-[Unreleased]: https://github.com/maximilianfeix/AxonPHPCLI/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/maximilianfeix/AxonPHPCLI/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.4.0
 [0.3.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.3.0
 [0.2.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.2.0

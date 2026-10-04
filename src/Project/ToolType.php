@@ -9,6 +9,7 @@ enum ToolType: string
     case Tests = 'tests';
     case StaticAnalysis = 'static-analysis';
     case CodeStyle = 'code-style';
+    case Dependencies = 'dependencies';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum ToolType: string
             self::Tests => 'Tests',
             self::StaticAnalysis => 'Static analysis',
             self::CodeStyle => 'Code style',
+            self::Dependencies => 'Dependencies',
         };
     }
 }

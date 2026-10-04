@@ -170,10 +170,16 @@ final class GitLabCiProvider implements Provider
             '  stage: test',
             sprintf('  image: php:%s-cli', $plan->latestPhp),
             '  script:',
-            ...$this->items([Yaml::PCOV_COMMAND, $coverage->command]),
+            ...$this->items([
+                Yaml::PCOV_COMMAND,
+                $coverage->command,
+                ...(null === $plan->coverageThreshold ? [] : [$plan->coverageThreshold->command]),
+            ]),
             // Matches the summary line of both PHPUnit ("Lines: 91.30%") and Pest ("Total: 91.3 %").
             "  coverage: '/^\\s*(?:Lines|Total):\\s*\\d+\\.\\d+\\s*%/'",
             '  artifacts:',
+            // Keeps the report when the threshold fails the job.
+            '    when: always',
             '    paths:',
             '      - '.ToolCatalog::COVERAGE_REPORT,
         ]);

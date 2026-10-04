@@ -6,6 +6,7 @@ namespace AxonPHP\Cli\Command;
 
 use AxonPHP\Cli\Exception\InvalidInputException;
 use AxonPHP\Cli\Exception\ProjectException;
+use AxonPHP\Cli\Pipeline\Plan;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Provider\Provider;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -89,7 +90,7 @@ final class InspectCommand extends PipelineCommand
      *     php: array{constraint: ?string, versions: list<string>, source: string},
      *     extensions: list<string>,
      *     tools: list<array{name: string, type: string, command: string}>,
-     *     options: array{branches: list<string>, coverage: bool, lowest: bool, audit: bool},
+     *     options: array{branches: list<string>, coverage: bool, min-coverage: ?float, lowest: bool, audit: bool},
      *     pipelines: list<array{provider: string, label: string, path: string, exists: bool}>
      * }
      */
@@ -119,6 +120,7 @@ final class InspectCommand extends PipelineCommand
             'options' => [
                 'branches' => $options->branches,
                 'coverage' => $options->coverage,
+                'min-coverage' => $options->minCoverage,
                 'lowest' => $options->lowest,
                 'audit' => $options->audit,
             ],
@@ -142,7 +144,7 @@ final class InspectCommand extends PipelineCommand
      *     php: array{constraint: ?string, versions: list<string>, source: string},
      *     extensions: list<string>,
      *     tools: list<array{name: string, type: string, command: string}>,
-     *     options: array{branches: list<string>, coverage: bool, lowest: bool, audit: bool},
+     *     options: array{branches: list<string>, coverage: bool, min-coverage: ?float, lowest: bool, audit: bool},
      *     pipelines: list<array{provider: string, label: string, path: string, exists: bool}>
      * } $report
      */
@@ -162,6 +164,7 @@ final class InspectCommand extends PipelineCommand
             ['Extensions' => [] === $report['extensions'] ? '<comment>none</comment>' : implode(', ', $report['extensions'])],
             ['Branches' => implode(', ', $report['options']['branches'])],
             ['Coverage' => $yesNo($report['options']['coverage'])],
+            ['Minimum coverage' => null === $report['options']['min-coverage'] ? '<comment>none</comment>' : Plan::percentage($report['options']['min-coverage']).'%'],
             ['Lowest dependencies' => $yesNo($report['options']['lowest'])],
             ['Security audit' => $yesNo($report['options']['audit'])],
         );
