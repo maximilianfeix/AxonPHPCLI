@@ -1,74 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-labelledby="title desc">
   <title id="title">AxonPHP CLI</title>
-  <desc id="desc">One command. A CI pipeline that fits your PHP project.</desc>
-
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#1E2140"/>
-      <stop offset="0.6" stop-color="#343A6B"/>
-      <stop offset="1" stop-color="#4F5B93"/>
-    </linearGradient>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8892BF"/>
-      <stop offset="1" stop-color="#4F5B93"/>
-    </linearGradient>
-    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1.2" fill="#ffffff" fill-opacity="0.06"/>
-    </pattern>
-    <clipPath id="frame">
-      <rect width="1280" height="360" rx="24"/>
-    </clipPath>
-  </defs>
-
-  <g clip-path="url(#frame)">
-    <rect width="1280" height="360" fill="url(#bg)"/>
-    <rect width="1280" height="360" fill="url(#dots)"/>
-    <!-- A nod to the PHP oval -->
-    <ellipse cx="1080" cy="150" rx="420" ry="230" fill="#8892BF" fill-opacity="0.13" transform="rotate(-8 1080 150)"/>
-    <ellipse cx="1080" cy="150" rx="300" ry="160" fill="none" stroke="#C7CBEA" stroke-opacity="0.14" stroke-width="2" transform="rotate(-8 1080 150)"/>
-  </g>
-
-  <!-- Logo -->
-  <g transform="translate(88 104) scale(1.1875)">
-    <rect width="128" height="128" rx="28" fill="url(#tile)"/>
-    <rect width="128" height="128" rx="28" fill="none" stroke="#ffffff" stroke-opacity="0.25"/>
-    <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M35 92 L64 34 L93 92" stroke-width="10"/>
-      <path d="M50 72 H78" stroke-width="7" stroke-opacity="0.55"/>
+  <desc id="desc">A CI pipeline that fits your PHP project.</desc>
+  <rect width="1280" height="320" rx="16" fill="#1E2140"/>
+  <g transform="translate(48 40) scale(1.25)">
+    <rect x="12" y="24" width="104" height="80" rx="40" fill="#4F5B93"/>
+    <g fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M36 88 L58 40 L80 88"/>
+      <path d="M46 68 H94"/>
     </g>
-    <circle cx="64" cy="34" r="10" fill="#ffffff"/>
-    <circle cx="35" cy="92" r="10" fill="#ffffff"/>
-    <circle cx="93" cy="92" r="15" fill="#ffffff"/>
-    <path d="M86 92 l5 5 l9 -10" fill="none" stroke="#4F5B93" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="94" cy="68" r="6" fill="#FFFFFF"/>
   </g>
-
   <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
-    <text x="284" y="166" font-size="76" font-weight="700" fill="#ffffff" letter-spacing="-1.5">Axon<tspan fill="#C7CBEA" font-style="italic" font-weight="800">PHP</tspan><tspan font-weight="300" fill="#E2E4EF" dx="18">CLI</tspan></text>
-    <text x="287" y="214" font-size="25" fill="#C7CBEA">One command. A CI pipeline that fits your PHP project.</text>
-  </g>
-
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="20">
-    <rect x="284" y="248" width="452" height="50" rx="10" fill="#14162B" fill-opacity="0.55" stroke="#ffffff" stroke-opacity="0.16"/>
-    <text x="306" y="280" fill="#7EE0A1">$<tspan fill="#ffffff" dx="12">vendor/bin/axonphp ci:init github</tspan></text>
-  </g>
-
-  <!-- What the generated pipeline runs -->
-  <g transform="translate(968 92)" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19">
-    <path d="M19 38 V132" stroke="#ffffff" stroke-opacity="0.25" stroke-width="2"/>
-    <g>
-      <circle cx="19" cy="19" r="19" fill="#7EE0A1" fill-opacity="0.16" stroke="#7EE0A1" stroke-width="2"/>
-      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#7EE0A1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="56" y="25" fill="#ffffff">Code style</text>
-    </g>
-    <g transform="translate(0 66)">
-      <circle cx="19" cy="19" r="19" fill="#7EE0A1" fill-opacity="0.16" stroke="#7EE0A1" stroke-width="2"/>
-      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#7EE0A1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="56" y="25" fill="#ffffff">Static analysis</text>
-    </g>
-    <g transform="translate(0 132)">
-      <circle cx="19" cy="19" r="19" fill="#7EE0A1" fill-opacity="0.16" stroke="#7EE0A1" stroke-width="2"/>
-      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#7EE0A1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="56" y="25" fill="#ffffff">Tests on PHP 8.2 – 8.5</text>
-    </g>
+    <text x="240" y="156" font-size="112" font-weight="700" letter-spacing="-3" fill="#FFFFFF">AxonPHP CLI</text>
+    <text x="64" y="252" font-size="48" fill="#E2E4EF">A CI pipeline that fits your PHP project.</text>
   </g>
 </svg>

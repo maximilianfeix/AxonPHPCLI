@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://maximilianfeix.github.io/AxonPHPCLI/">
-    <img src="docs/banner.svg" alt="AxonPHP CLI: one command, a CI pipeline that fits your PHP project" width="100%">
+    <img src="docs/banner.svg" alt="AxonPHP CLI: a CI pipeline that fits your PHP project" width="100%">
   </a>
 </p>
 

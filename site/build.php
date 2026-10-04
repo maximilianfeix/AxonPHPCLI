@@ -5,8 +5,8 @@ declare(strict_types=1);
 /*
  * Builds docs/index.html, the GitHub Pages site.
  *
- * The pipeline examples, the detection table and the counts are rendered by the
- * same code the CLI runs. A test runs this script with --check, so a change to
+ * The pipeline examples, the detection table and the terminal summary are rendered
+ * by the same code the CLI runs. A test runs this script with --check, so a change to
  * the CLI that is not followed by "composer site" fails the build.
  *
  * Usage:
@@ -14,9 +14,9 @@ declare(strict_types=1);
  *   composer site:check    exit with 1 when docs/index.html is out of date
  */
 
-use AxonPHP\Cli\Application;
 use AxonPHP\Cli\Project\Project;
 use AxonPHP\Cli\Project\ToolCatalog;
+use AxonPHP\Cli\Project\ToolType;
 use AxonPHP\Cli\Provider\PipelineOptions;
 use AxonPHP\Cli\Provider\ProviderRegistry;
 
@@ -98,11 +98,22 @@ foreach (ToolCatalog::definitions() as [$candidates, $tool]) {
     ];
 }
 
-// The commands AxonPHP adds on top of the ones every Symfony Console application has.
-$commandCount = count(array_diff(
-    array_keys((new Application())->all()),
-    ['help', 'list', 'completion', '_complete'],
+// The rows "ci:init" prints for the example project, shown in the terminal at the top of the page.
+$toolNames = static fn (ToolType $type): string => implode(', ', array_map(
+    static fn ($tool): string => $tool->name,
+    $project->tools($type),
 ));
+
+$summary = [
+    ['Project', '/home/you/acme-app', ''],
+    ['PHP versions', implode(', ', $project->phpVersions), sprintf('(from "php": "%s")', (string) $project->phpConstraint)],
+    ['Extensions', implode(', ', $project->extensions), ''],
+    ['Tests', $toolNames(ToolType::Tests), ''],
+    ['Static analysis', $toolNames(ToolType::StaticAnalysis), ''],
+    ['Code style', $toolNames(ToolType::CodeStyle), ''],
+    ['Branches', implode(', ', $options->branches), ''],
+    ['Extras', 'coverage', ''],
+];
 
 $repository = 'https://github.com/maximilianfeix/AxonPHPCLI';
 

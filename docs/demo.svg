@@ -31,16 +31,16 @@
     }
   </style>
 
-  <rect width="860" height="496" rx="12" fill="#1B1D36"/>
+  <rect width="860" height="496" rx="12" fill="#1E2140"/>
   <rect x="0.5" y="0.5" width="859" height="495" rx="12" fill="none" stroke="#8892BF" stroke-opacity="0.35"/>
-  <path d="M0 12 a12 12 0 0 1 12 -12 h836 a12 12 0 0 1 12 12 v28 h-860 z" fill="#2A2E57"/>
-  <circle cx="24" cy="20" r="6" fill="#ff5f57"/>
-  <circle cx="44" cy="20" r="6" fill="#febc2e"/>
-  <circle cx="64" cy="20" r="6" fill="#28c840"/>
-  <text x="430" y="25" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#C7CBEA">acme-app — axonphp</text>
+  <path d="M0 40 H860" stroke="#8892BF" stroke-opacity="0.35"/>
+  <circle cx="24" cy="20" r="6" fill="#8892BF" fill-opacity="0.6"/>
+  <circle cx="44" cy="20" r="6" fill="#8892BF" fill-opacity="0.6"/>
+  <circle cx="64" cy="20" r="6" fill="#8892BF" fill-opacity="0.6"/>
+  <text x="430" y="25" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#C7CBEA">acme-app</text>
 
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" fill="#E2E4EF">
-    <text class="line l1" x="24" y="74"><tspan fill="#7EE0A1">$</tspan><tspan dx="9">vendor/bin/axonphp ci:init github --coverage</tspan></text>
+    <text class="line l1" x="24" y="74"><tspan fill="#6FDC8C">$</tspan><tspan dx="9">vendor/bin/axonphp ci:init github --coverage</tspan></text>
 
     <g class="line l2">
       <text x="24" y="118" fill="#F0C674">AxonPHP CLI · GitHub Actions</text>
@@ -48,15 +48,15 @@
       <text x="32" y="184" fill="#6C739F">----------------- ----------------------------------------</text>
     </g>
 
-    <text class="line l3" y="206"><tspan x="41" fill="#7EE0A1">Project</tspan><tspan x="192">/home/you/acme-app</tspan></text>
-    <text class="line l4" y="228"><tspan x="41" fill="#7EE0A1">PHP versions</tspan><tspan x="192">8.2, 8.3, 8.4, 8.5</tspan><tspan fill="#F0C674" dx="8">(from "php": "^8.2")</tspan></text>
-    <text class="line l5" y="250"><tspan x="41" fill="#7EE0A1">Extensions</tspan><tspan x="192">intl, pdo</tspan></text>
-    <text class="line l6" y="272"><tspan x="41" fill="#7EE0A1">Tests</tspan><tspan x="192">PHPUnit</tspan></text>
-    <text class="line l7" y="294"><tspan x="41" fill="#7EE0A1">Static analysis</tspan><tspan x="192">PHPStan</tspan></text>
+    <text class="line l3" y="206"><tspan x="41" fill="#6FDC8C">Project</tspan><tspan x="192">/home/you/acme-app</tspan></text>
+    <text class="line l4" y="228"><tspan x="41" fill="#6FDC8C">PHP versions</tspan><tspan x="192">8.2, 8.3, 8.4, 8.5</tspan><tspan fill="#F0C674" dx="8">(from "php": "^8.2")</tspan></text>
+    <text class="line l5" y="250"><tspan x="41" fill="#6FDC8C">Extensions</tspan><tspan x="192">intl, pdo</tspan></text>
+    <text class="line l6" y="272"><tspan x="41" fill="#6FDC8C">Tests</tspan><tspan x="192">PHPUnit</tspan></text>
+    <text class="line l7" y="294"><tspan x="41" fill="#6FDC8C">Static analysis</tspan><tspan x="192">PHPStan</tspan></text>
     <g class="line l8">
-      <text y="316"><tspan x="41" fill="#7EE0A1">Code style</tspan><tspan x="192">PHP-CS-Fixer</tspan></text>
-      <text y="338"><tspan x="41" fill="#7EE0A1">Branches</tspan><tspan x="192">main</tspan></text>
-      <text y="360"><tspan x="41" fill="#7EE0A1">Extras</tspan><tspan x="192">coverage</tspan></text>
+      <text y="316"><tspan x="41" fill="#6FDC8C">Code style</tspan><tspan x="192">PHP-CS-Fixer</tspan></text>
+      <text y="338"><tspan x="41" fill="#6FDC8C">Branches</tspan><tspan x="192">main</tspan></text>
+      <text y="360"><tspan x="41" fill="#6FDC8C">Extras</tspan><tspan x="192">coverage</tspan></text>
       <text x="32" y="382" fill="#6C739F">----------------- ----------------------------------------</text>
     </g>
 
