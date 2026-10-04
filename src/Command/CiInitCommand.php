@@ -6,6 +6,7 @@ namespace AxonPHP\Cli\Command;
 
 use AxonPHP\Cli\Exception\InvalidInputException;
 use AxonPHP\Cli\Exception\ProjectException;
+use AxonPHP\Cli\Pipeline\Plan;
 use AxonPHP\Cli\Project\PhpVersionResolver;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolType;
@@ -50,6 +51,10 @@ final class CiInitCommand extends PipelineCommand
                     Add a coverage job, a lowest-dependencies job and a security audit:
 
                       <info>%command.full_name% github --coverage --lowest --audit</info>
+
+                    Fail the pipeline when line coverage drops below a percentage:
+
+                      <info>%command.full_name% github --min-coverage 90</info>
 
                     To make such choices permanent, store them in <comment>composer.json</comment>:
 
@@ -162,6 +167,10 @@ final class CiInitCommand extends PipelineCommand
             'security audit' => $options->audit && $project->usesComposer,
         ]));
 
+        if (null !== $options->minCoverage && 'coverage' === ($extras[0] ?? null)) {
+            $extras[0] = sprintf('coverage (at least %s%%)', Plan::percentage($options->minCoverage));
+        }
+
         $rows[] = ['Branches' => implode(', ', $options->branches)];
         $rows[] = ['Extras' => [] === $extras ? '<comment>none</comment>' : implode(', ', $extras)];
 
@@ -183,23 +192,5 @@ final class CiInitCommand extends PipelineCommand
         }
 
         $ui->definitionList(...$rows);
-    }
-
-    private function write(string $target, string $contents): void
-    {
-        $directory = dirname($target);
-
-        if (!is_dir($directory) && !@mkdir($directory, 0o777, true) && !is_dir($directory)) {
-            throw new ProjectException(sprintf('Could not create the directory "%s".', $directory));
-        }
-
-        // Write next to the target and swap it in, so a failed write never leaves a truncated pipeline behind.
-        $temporary = $target.'.'.bin2hex(random_bytes(4)).'.tmp';
-
-        if (strlen($contents) !== @file_put_contents($temporary, $contents) || !@rename($temporary, $target)) {
-            @unlink($temporary);
-
-            throw new ProjectException(sprintf('Could not write "%s".', $target));
-        }
     }
 }

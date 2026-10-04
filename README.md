@@ -9,6 +9,7 @@
   <a href="https://github.com/maximilianfeix/AxonPHPCLI/releases"><img src="https://img.shields.io/github/v/release/maximilianfeix/AxonPHPCLI?color=4F5B93&label=release" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/php-8.2%20%E2%80%93%208.5-777BB4?logo=php&logoColor=white" alt="PHP 8.2 to 8.5">
   <img src="https://img.shields.io/badge/PHPStan-level%20max-4F5B93" alt="PHPStan level max">
+  <img src="https://img.shields.io/badge/coverage-100%25-3da639" alt="100% line coverage, enforced in CI">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3da639" alt="MIT license"></a>
 </p>
 
@@ -26,9 +27,9 @@ AxonPHP CLI writes the CI pipeline for your PHP project so you don't have to
 copy one from your last repository and fix it up by hand.
 
 It reads your `composer.json`, works out which PHP versions you support and
-which tools you use, and generates a pipeline for GitHub Actions, GitLab CI or
-Bitbucket Pipelines that runs exactly those. No config file, no questions to
-answer.
+which tools you use, and generates a pipeline for GitHub Actions, GitLab CI,
+Bitbucket Pipelines or CircleCI that runs exactly those. No config file, no
+questions to answer.
 
 <p align="center">
   <img src="docs/demo.svg" alt="Terminal output of axonphp ci:init github" width="860">
@@ -41,12 +42,13 @@ answer.
   matrix of 8.2, 8.3, 8.4 and 8.5.
 - **Runs the tools you already use.** PHPUnit, Pest, PHPStan, Psalm, Rector,
   PHP-CS-Fixer, Pint and more.
-- **Three CI services.** GitHub Actions, GitLab CI and Bitbucket Pipelines from
-  the same detection.
+- **Four CI services.** GitHub Actions, GitLab CI, Bitbucket Pipelines and
+  CircleCI from the same detection.
 - **Stays in sync.** `ci:check` fails when the committed pipeline no longer
-  matches the project, and shows the difference.
-- **Optional extras.** A code coverage job, a `composer audit` step and a run
-  against the lowest dependency versions you allow.
+  matches the project and shows the difference; `ci:update` rewrites it.
+- **Optional extras.** A code coverage job with a minimum it must reach, a
+  `composer audit` step and a run against the lowest dependency versions you
+  allow.
 - **Sensible pipeline defaults.** Composer caching, least-privilege
   permissions, cancellation of superseded runs, and no duplicate pipelines for
   a push to a branch with an open pull request.
@@ -90,11 +92,13 @@ vendor/bin/axonphp ci:init gitlab --dry-run
 
 ## Commands
 
-| Command    | What it does                                                       |
-| ---------- | ------------------------------------------------------------------ |
-| `ci:init`  | Generates the pipeline file for a provider                         |
-| `ci:check` | Checks that the committed pipeline still matches the project       |
-| `inspect`  | Shows what was detected, as text or JSON, without writing anything |
+| Command     | What it does                                                       |
+| ----------- | ------------------------------------------------------------------ |
+| `ci:init`   | Generates the pipeline file for a provider                         |
+| `ci:check`  | Checks that the committed pipeline still matches the project       |
+| `ci:update` | Rewrites the pipelines that no longer match the project            |
+| `inspect`   | Shows what was detected, as text or JSON, without writing anything |
+| `tools`     | Lists every tool and provider AxonPHP supports                     |
 
 ### `ci:init`
 
@@ -107,12 +111,14 @@ axonphp ci:init [options] [<provider>]
 | `github`    | GitHub Actions      | `.github/workflows/ci.yml` |
 | `gitlab`    | GitLab CI           | `.gitlab-ci.yml`           |
 | `bitbucket` | Bitbucket Pipelines | `bitbucket-pipelines.yml`  |
+| `circleci`  | CircleCI            | `.circleci/config.yml`     |
 
 | Option                         | Description                                                            |
 | ------------------------------ | ---------------------------------------------------------------------- |
 | `-p, --php=VERSION`            | PHP version to test against. Repeat it to build your own matrix.       |
 | `-b, --branch=NAME`            | Branch whose pushes trigger the pipeline. Repeatable. Default: `main`. |
 | `--coverage` / `--no-coverage` | Add a code coverage job on the newest PHP version.                     |
+| `--min-coverage=PERCENT`       | Fail the coverage job below this line coverage. Implies `--coverage`.  |
 | `--lowest` / `--no-lowest`     | Also test the lowest allowed dependencies on the oldest PHP version.   |
 | `--audit` / `--no-audit`       | Fail on dependencies with known security advisories.                   |
 | `-d, --working-dir=DIR`        | Project directory. Default: the current directory.                     |
@@ -126,8 +132,8 @@ vendor/bin/axonphp ci:init github --php 8.4 --php 8.5 --branch main --branch dev
 # Add coverage, a lowest-dependencies run and a security audit
 vendor/bin/axonphp ci:init github --coverage --lowest --audit
 
-# Regenerate after adding PHPStan to the project
-vendor/bin/axonphp ci:init github --force
+# Fail the pipeline when line coverage drops below 90%
+vendor/bin/axonphp ci:init github --min-coverage 90
 ```
 
 In `--dry-run` mode the summary goes to stderr and only the pipeline goes to
@@ -159,6 +165,32 @@ change the PHP constraint, or edit the file by hand. `ci:check` accepts the same
 pipeline options as `ci:init`; store them in `composer.json`
 ([configuration](#configuration)) and no options are needed.
 
+| Format            | Output                                                                       |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `--format text`   | The list and the difference shown above. The default.                        |
+| `--format github` | The same, plus an annotation on the pipeline file in the pull request.       |
+| `--format json`   | `upToDate` and, per pipeline, `provider`, `path`, `status` and the `diff`.   |
+
+### `ci:update`
+
+```text
+axonphp ci:update [options] [<provider>]
+```
+
+Rewrites every pipeline file that `ci:check` would report and leaves the ones
+that are up to date alone. Run it after you add a tool or change the PHP
+constraint:
+
+```console
+$ composer require --dev phpstan/phpstan
+$ vendor/bin/axonphp ci:update
+ ✓ .github/workflows/ci.yml updated
+ ✓ .gitlab-ci.yml updated
+```
+
+`--dry-run` prints the difference and writes nothing. With a provider name it
+also creates that provider's pipeline when it is missing.
+
 ### `inspect`
 
 ```text
@@ -171,6 +203,15 @@ based on, and which pipeline files exist.
 ```bash
 vendor/bin/axonphp inspect --format json | jq '.php.versions'
 ```
+
+### `tools`
+
+```text
+axonphp tools [--format=text|json]
+```
+
+Lists every tool AxonPHP detects, the Composer package that triggers it and the
+command the pipeline runs for it, followed by the supported providers.
 
 ### Exit codes
 
@@ -195,6 +236,7 @@ under `extra.axonphp` in `composer.json`:
             "php": ["8.3", "8.4"],
             "branches": ["main", "develop"],
             "coverage": true,
+            "min-coverage": 90,
             "lowest": true,
             "audit": true
         }
@@ -202,13 +244,14 @@ under `extra.axonphp` in `composer.json`:
 }
 ```
 
-| Key        | Type            | Default                           |
-| ---------- | --------------- | --------------------------------- |
-| `php`      | list of strings | derived from the `php` constraint |
-| `branches` | list of strings | `["main"]`                        |
-| `coverage` | boolean         | `false`                           |
-| `lowest`   | boolean         | `false`                           |
-| `audit`    | boolean         | `false`                           |
+| Key            | Type            | Default                                    |
+| -------------- | --------------- | ------------------------------------------ |
+| `php`          | list of strings | derived from the `php` constraint          |
+| `branches`     | list of strings | `["main"]`                                 |
+| `coverage`     | boolean         | `false`, or `true` when a minimum is set   |
+| `min-coverage` | number, 0–100   | none                                       |
+| `lowest`       | boolean         | `false`                                    |
+| `audit`        | boolean         | `false`                                    |
 
 Command line options win over `extra.axonphp`, which wins over the defaults.
 
@@ -226,13 +269,20 @@ Command line options win over `extra.axonphp`, which wins over the defaults.
 | `vimeo/psalm`                                    | `vendor/bin/psalm --no-progress`              |
 | `rector/rector`                                  | `vendor/bin/rector process --dry-run`         |
 | `deptrac/deptrac`, `qossmic/deptrac-shim`        | `vendor/bin/deptrac analyse --no-progress`    |
+| `phparkitect/phparkitect`                        | `vendor/bin/phparkitect check`                |
 | `friendsofphp/php-cs-fixer`, `php-cs-fixer/shim` | `vendor/bin/php-cs-fixer check --diff`        |
 | `laravel/pint`                                   | `vendor/bin/pint --test`                      |
 | `symplify/easy-coding-standard`                  | `vendor/bin/ecs check`                        |
 | `squizlabs/php_codesniffer`                      | `vendor/bin/phpcs`                            |
+| `vincentlanglet/twig-cs-fixer`                   | `vendor/bin/twig-cs-fixer lint`               |
+| `ergebnis/composer-normalize`                    | `composer normalize --dry-run`                |
+| `maglnet/composer-require-checker`               | `vendor/bin/composer-require-checker check`   |
+| `icanhazstring/composer-unused`                  | `vendor/bin/composer-unused --no-progress`    |
+| `shipmonk/composer-dependency-analyser`          | `vendor/bin/composer-dependency-analyser`     |
 
-Tests run on every PHP version in the matrix. Static analysis and code style
-run once, on the newest version, in a separate job.
+Tests run on every PHP version in the matrix. Static analysis, code style and
+dependency checks run once, on the newest version, in a separate job.
+`axonphp tools` prints this list for the version you have installed.
 
 A few details worth knowing:
 
@@ -244,18 +294,21 @@ A few details worth knowing:
 - With no `composer.json` at all, you get that lint-only pipeline and a warning.
 - Coverage needs PHPUnit or Pest. The report is written to `coverage.xml` and
   kept as a build artifact.
+- A minimum coverage is enforced by Pest's own `--min` option. For PHPUnit the
+  job reads the line coverage from `coverage.xml` and fails below the minimum.
+- CircleCI builds every pushed branch, so the branch list is not used there.
 
 ## Example output
 
 This repository uses the workflow AxonPHP CLI generated for itself, with
-coverage, lowest dependencies and the security audit switched on:
+100% required coverage, lowest dependencies and the security audit switched on:
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 The [website](https://maximilianfeix.github.io/AxonPHPCLI/#output) shows the
-output for all three providers side by side.
+output for all four providers side by side.
 
 The generated file is a starting point that belongs to you. Edit it freely;
-AxonPHP only touches it again when you run `ci:init --force`.
+AxonPHP only touches it again when you run `ci:update` or `ci:init --force`.
 
 ## Development
 
@@ -270,10 +323,11 @@ The code is small and split by responsibility:
 
 ```text
 src/
-├── Command/    ci:init, ci:check and inspect
+├── Command/    ci:init, ci:check, ci:update, inspect and tools
 ├── Diff/       the line diff ci:check prints
+├── Pipeline/   decides which jobs a pipeline has and what they run
 ├── Project/    reads composer.json: PHP versions, extensions, tools, settings
-└── Provider/   renders a pipeline for one CI service
+└── Provider/   translates that plan into the YAML of one CI service
 site/           builds the website in docs/ from the same code
 ```
 

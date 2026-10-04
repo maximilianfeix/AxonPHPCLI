@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AxonPHP\Cli\Provider;
 
+use AxonPHP\Cli\Pipeline\Plan;
+use AxonPHP\Cli\Pipeline\Step;
 use AxonPHP\Cli\Project\Project;
-use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolCatalog;
-use AxonPHP\Cli\Project\ToolType;
 
 final class GitLabCiProvider implements Provider
 {
@@ -28,43 +28,40 @@ final class GitLabCiProvider implements Provider
 
     public function render(Project $project, PipelineOptions $options): string
     {
-        $qualityTools = $project->tools(ToolType::StaticAnalysis, ToolType::CodeStyle);
-        $audit = $options->audit && $project->usesComposer;
-        $withQuality = [] !== $qualityTools || $audit;
-        $coverageTool = $options->coverage ? $project->coverageTool() : null;
+        $plan = Plan::from($project, $options);
 
         $sections = [
             Yaml::HEADER,
-            $this->stages($withQuality),
-            $this->workflow($options->branches),
+            $this->stages($plan),
+            $this->workflow($plan->branches),
         ];
 
-        if ($project->usesComposer) {
-            $sections[] = $this->composerDefaults($project);
+        if ($plan->usesComposer) {
+            $sections[] = $this->composerDefaults($plan);
         }
 
-        if ($withQuality) {
-            $sections[] = $this->qualityJob($project, $qualityTools, $audit);
+        if ([] !== $plan->quality) {
+            $sections[] = $this->qualityJob($plan);
         }
 
-        $sections[] = $this->testsJob($project);
+        $sections[] = $this->testsJob($plan);
 
-        if ($options->lowest && $project->usesComposer) {
-            $sections[] = $this->lowestJob($project);
+        if ($plan->lowest) {
+            $sections[] = $this->lowestJob($plan);
         }
 
-        if (null !== $coverageTool) {
-            $sections[] = $this->coverageJob($project, $coverageTool);
+        if (null !== $plan->coverage) {
+            $sections[] = $this->coverageJob($plan, $plan->coverage);
         }
 
         return implode("\n\n", $sections)."\n";
     }
 
-    private function stages(bool $withQuality): string
+    private function stages(Plan $plan): string
     {
         $lines = ['stages:'];
 
-        if ($withQuality) {
+        if ([] !== $plan->quality) {
             $lines[] = '  - quality';
         }
 
@@ -97,9 +94,9 @@ final class GitLabCiProvider implements Provider
         return implode("\n", $lines);
     }
 
-    private function composerDefaults(Project $project): string
+    private function composerDefaults(Plan $plan): string
     {
-        $lines = [
+        return implode("\n", [
             'variables:',
             '  COMPOSER_ALLOW_SUPERUSER: '.Yaml::quote('1'),
             '  COMPOSER_NO_INTERACTION: '.Yaml::quote('1'),
@@ -114,41 +111,27 @@ final class GitLabCiProvider implements Provider
             '    paths:',
             '      - .composer-cache/',
             '  before_script:',
-        ];
-
-        foreach ([...Yaml::dockerSetup($project->extensions), Yaml::INSTALL_COMMAND] as $command) {
-            $lines[] = '    - '.$command;
-        }
-
-        return implode("\n", $lines);
-    }
-
-    /**
-     * @param list<Tool> $tools
-     */
-    private function qualityJob(Project $project, array $tools, bool $audit): string
-    {
-        $script = array_map(static fn (Tool $tool): string => $tool->command, $tools);
-
-        if ($audit) {
-            array_unshift($script, Yaml::AUDIT_COMMAND);
-        }
-
-        return implode("\n", [
-            'quality:',
-            '  stage: quality',
-            sprintf('  image: php:%s-cli', $project->latestPhpVersion()),
-            '  script:',
-            ...$this->items($script),
+            ...$this->items([...Yaml::dockerSetup($plan->extensions), Plan::INSTALL_COMMAND]),
         ]);
     }
 
-    private function testsJob(Project $project): string
+    private function qualityJob(Plan $plan): string
     {
-        $script = Yaml::testCommands($project);
+        return implode("\n", [
+            'quality:',
+            '  stage: quality',
+            sprintf('  image: php:%s-cli', $plan->latestPhp),
+            '  script:',
+            ...$this->items(Plan::commands($plan->quality)),
+        ]);
+    }
 
-        if ($project->usesComposer) {
-            array_unshift($script, 'composer validate --strict');
+    private function testsJob(Plan $plan): string
+    {
+        $script = Plan::commands($plan->tests);
+
+        if ($plan->usesComposer) {
+            array_unshift($script, Plan::VALIDATE_COMMAND);
         }
 
         return implode("\n", [
@@ -157,7 +140,7 @@ final class GitLabCiProvider implements Provider
             '  image: php:${PHP_VERSION}-cli',
             '  parallel:',
             '    matrix:',
-            '      - PHP_VERSION: '.Yaml::inlineList($project->phpVersions),
+            '      - PHP_VERSION: '.Yaml::inlineList($plan->phpVersions),
             '  script:',
             ...$this->items($script),
         ]);
@@ -166,31 +149,37 @@ final class GitLabCiProvider implements Provider
     /**
      * The lowest dependencies only need to hold on the oldest PHP version the project supports.
      */
-    private function lowestJob(Project $project): string
+    private function lowestJob(Plan $plan): string
     {
         return implode("\n", [
             'tests:lowest:',
             '  stage: test',
-            sprintf('  image: php:%s-cli', $project->oldestPhpVersion()),
+            sprintf('  image: php:%s-cli', $plan->oldestPhp),
             // Replaces the default before_script: installing from the lock file first could fail on this PHP version.
             '  before_script:',
-            ...$this->items([...Yaml::dockerSetup($project->extensions), Yaml::LOWEST_COMMAND]),
+            ...$this->items([...Yaml::dockerSetup($plan->extensions), Plan::LOWEST_COMMAND]),
             '  script:',
-            ...$this->items(Yaml::testCommands($project)),
+            ...$this->items(Plan::commands($plan->tests)),
         ]);
     }
 
-    private function coverageJob(Project $project, Tool $tool): string
+    private function coverageJob(Plan $plan, Step $coverage): string
     {
         return implode("\n", [
             'coverage:',
             '  stage: test',
-            sprintf('  image: php:%s-cli', $project->latestPhpVersion()),
+            sprintf('  image: php:%s-cli', $plan->latestPhp),
             '  script:',
-            ...$this->items(['install-php-extensions pcov', (string) $tool->coverageCommand]),
+            ...$this->items([
+                Yaml::PCOV_COMMAND,
+                $coverage->command,
+                ...(null === $plan->coverageThreshold ? [] : [$plan->coverageThreshold->command]),
+            ]),
             // Matches the summary line of both PHPUnit ("Lines: 91.30%") and Pest ("Total: 91.3 %").
             "  coverage: '/^\\s*(?:Lines|Total):\\s*\\d+\\.\\d+\\s*%/'",
             '  artifacts:',
+            // Keeps the report when the threshold fails the job.
+            '    when: always',
             '    paths:',
             '      - '.ToolCatalog::COVERAGE_REPORT,
         ]);

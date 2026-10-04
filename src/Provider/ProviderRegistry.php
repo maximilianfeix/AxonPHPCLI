@@ -20,7 +20,12 @@ final class ProviderRegistry
 
     public static function default(): self
     {
-        return new self(new GitHubActionsProvider(), new GitLabCiProvider(), new BitbucketPipelinesProvider());
+        return new self(
+            new GitHubActionsProvider(),
+            new GitLabCiProvider(),
+            new BitbucketPipelinesProvider(),
+            new CircleCiProvider(),
+        );
     }
 
     /**

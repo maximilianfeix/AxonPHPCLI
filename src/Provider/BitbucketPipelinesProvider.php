@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AxonPHP\Cli\Provider;
 
+use AxonPHP\Cli\Pipeline\Plan;
 use AxonPHP\Cli\Project\Project;
-use AxonPHP\Cli\Project\Tool;
-use AxonPHP\Cli\Project\ToolType;
 
 final class BitbucketPipelinesProvider implements Provider
 {
@@ -27,56 +26,50 @@ final class BitbucketPipelinesProvider implements Provider
 
     public function render(Project $project, PipelineOptions $options): string
     {
-        $qualityTools = $project->tools(ToolType::StaticAnalysis, ToolType::CodeStyle);
-        $audit = $options->audit && $project->usesComposer;
-        $coverageTool = $options->coverage ? $project->coverageTool() : null;
-        $latest = $project->latestPhpVersion();
+        $plan = Plan::from($project, $options);
 
         // anchor => step definition, in the order the steps run
         $sequential = [];
         $parallel = [];
 
-        if ([] !== $qualityTools || $audit) {
-            $script = array_map(static fn (Tool $tool): string => $tool->command, $qualityTools);
-
-            if ($audit) {
-                array_unshift($script, Yaml::AUDIT_COMMAND);
-            }
-
-            $sequential['quality'] = $this->step($project, 'quality', 'Code quality', $latest, $script);
+        if ([] !== $plan->quality) {
+            $sequential['quality'] = $this->step($plan, 'quality', 'Code quality', $plan->latestPhp, Plan::commands($plan->quality));
         }
 
-        foreach ($project->phpVersions as $version) {
+        foreach ($plan->phpVersions as $version) {
             $anchor = 'tests-php-'.str_replace('.', '-', $version);
-            $script = Yaml::testCommands($project);
+            $script = Plan::commands($plan->tests);
 
-            if ($project->usesComposer) {
-                array_unshift($script, 'composer validate --strict');
+            if ($plan->usesComposer) {
+                array_unshift($script, Plan::VALIDATE_COMMAND);
             }
 
-            $parallel[$anchor] = $this->step($project, $anchor, sprintf('Tests (PHP %s)', $version), $version, $script);
+            $parallel[$anchor] = $this->step($plan, $anchor, sprintf('Tests (PHP %s)', $version), $version, $script);
         }
 
-        if ($options->lowest && $project->usesComposer) {
-            $oldest = $project->oldestPhpVersion();
+        if ($plan->lowest) {
             $parallel['tests-lowest'] = $this->step(
-                $project,
+                $plan,
                 'tests-lowest',
-                sprintf('Tests (PHP %s, lowest dependencies)', $oldest),
-                $oldest,
-                Yaml::testCommands($project),
+                sprintf('Tests (PHP %s, lowest dependencies)', $plan->oldestPhp),
+                $plan->oldestPhp,
+                Plan::commands($plan->tests),
                 // Installing from the lock file first could fail on this PHP version.
-                Yaml::LOWEST_COMMAND,
+                Plan::LOWEST_COMMAND,
             );
         }
 
-        if (null !== $coverageTool) {
+        if (null !== $plan->coverage) {
             $parallel['coverage'] = $this->step(
-                $project,
+                $plan,
                 'coverage',
                 'Code coverage',
-                $latest,
-                ['install-php-extensions pcov', (string) $coverageTool->coverageCommand],
+                $plan->latestPhp,
+                [
+                    Yaml::PCOV_COMMAND,
+                    $plan->coverage->command,
+                    ...(null === $plan->coverageThreshold ? [] : [$plan->coverageThreshold->command]),
+                ],
             );
         }
 
@@ -90,14 +83,14 @@ final class BitbucketPipelinesProvider implements Provider
             '  branches:',
         ];
 
-        foreach ($options->branches as $branch) {
+        foreach ($plan->branches as $branch) {
             $pipelines[] = sprintf('    %s:', Yaml::quote($branch));
             $pipelines = [...$pipelines, ...$run];
         }
 
         return implode("\n\n", [
             Yaml::HEADER,
-            sprintf('image: php:%s-cli', $latest),
+            sprintf('image: php:%s-cli', $plan->latestPhp),
             implode("\n", ['definitions:', '  steps:', ...array_values($sequential), ...array_values($parallel)]),
             implode("\n", $pipelines),
         ])."\n";
@@ -108,12 +101,12 @@ final class BitbucketPipelinesProvider implements Provider
      * @param string       $install the command that installs the dependencies
      */
     private function step(
-        Project $project,
+        Plan $plan,
         string $anchor,
         string $name,
         string $phpVersion,
         array $script,
-        string $install = Yaml::INSTALL_COMMAND,
+        string $install = Plan::INSTALL_COMMAND,
     ): string {
         $lines = [
             sprintf('    - step: &%s', $anchor),
@@ -121,11 +114,11 @@ final class BitbucketPipelinesProvider implements Provider
             sprintf('        image: php:%s-cli', $phpVersion),
         ];
 
-        if ($project->usesComposer) {
+        if ($plan->usesComposer) {
             $lines = [...$lines, '        caches:', '          - composer'];
             $script = [
                 'export COMPOSER_ALLOW_SUPERUSER=1',
-                ...Yaml::dockerSetup($project->extensions),
+                ...Yaml::dockerSetup($plan->extensions),
                 $install,
                 ...$script,
             ];

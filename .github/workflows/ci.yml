@@ -100,3 +100,6 @@ jobs:
         with:
           name: coverage
           path: coverage.xml
+
+      - name: Require 100% line coverage
+        run: php -r '$m = simplexml_load_file("coverage.xml")->project->metrics; $c = 100 * (int) $m["coveredstatements"] / max(1, (int) $m["statements"]); printf("Line coverage %.2f%%, required 100%%\n", $c); exit((int) ($c < 100));'

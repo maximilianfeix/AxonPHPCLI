@@ -1,6 +1,6 @@
 {
     "name": "maxim/axonphp-cli",
-    "description": "Zero-config CLI that inspects your PHP project and generates a ready-to-run CI pipeline for GitHub Actions or GitLab CI.",
+    "description": "Zero-config CLI that inspects your PHP project and generates a ready-to-run CI pipeline for GitHub Actions, GitLab CI, Bitbucket Pipelines or CircleCI.",
     "license": "MIT",
     "type": "library",
     "keywords": [
@@ -10,6 +10,8 @@
         "ci-cd",
         "github-actions",
         "gitlab-ci",
+        "bitbucket-pipelines",
+        "circleci",
         "generator",
         "scaffolding"
     ],
@@ -47,6 +49,7 @@
         "axonphp": {
             "branches": ["main", "develop"],
             "coverage": true,
+            "min-coverage": 100,
             "lowest": true,
             "audit": true
         }
@@ -62,6 +65,10 @@
             "@ci:check"
         ],
         "ci:check": "@php bin/axonphp ci:check",
+        "coverage": [
+            "@putenv XDEBUG_MODE=coverage",
+            "phpunit --coverage-text"
+        ],
         "cs": "php-cs-fixer check --diff",
         "cs:fix": "php-cs-fixer fix",
         "site": "@php site/build.php",
@@ -72,6 +79,7 @@
     "scripts-descriptions": {
         "check": "Run code style, static analysis, tests and the pipeline check",
         "ci:check": "Check that the CI workflow matches the project",
+        "coverage": "Run the test suite and print the line coverage",
         "cs": "Check the code style without changing files",
         "cs:fix": "Fix the code style",
         "site": "Rebuild the website in docs/",

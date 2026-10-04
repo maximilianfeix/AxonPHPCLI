@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AxonPHP\Cli\Tests\Provider;
 
+use AxonPHP\Cli\Pipeline\Plan;
 use AxonPHP\Cli\Project\Project;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolType;
@@ -15,6 +16,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(GitLabCiProvider::class)]
+#[CoversClass(Plan::class)]
 #[CoversClass(Yaml::class)]
 final class GitLabCiProviderTest extends TestCase
 {
@@ -82,7 +84,7 @@ final class GitLabCiProviderTest extends TestCase
         self::assertSame(['test'], self::yaml($pipeline, 'stages'));
         self::assertArrayNotHasKey('quality', (array) self::yaml($pipeline));
         self::assertSame(
-            ['composer validate --strict', Yaml::LINT_COMMAND],
+            ['composer validate --strict', Plan::LINT_COMMAND],
             self::yaml($pipeline, 'tests', 'script'),
         );
     }
@@ -92,7 +94,7 @@ final class GitLabCiProviderTest extends TestCase
         $pipeline = (new GitLabCiProvider())->render(new Project(['8.4'], usesComposer: false), new PipelineOptions(['main']));
 
         self::assertStringNotContainsString('composer', $pipeline);
-        self::assertSame([Yaml::LINT_COMMAND], self::yaml($pipeline, 'tests', 'script'));
+        self::assertSame([Plan::LINT_COMMAND], self::yaml($pipeline, 'tests', 'script'));
     }
 
     public function testAddsCoverageLowestDependenciesAndAudit(): void
@@ -110,7 +112,7 @@ final class GitLabCiProviderTest extends TestCase
                 'stage' => 'test',
                 'image' => 'php:8.3-cli',
                 // No "composer install" here: the lock file may not be installable on the oldest PHP version.
-                'before_script' => [...Yaml::dockerSetup([]), Yaml::LOWEST_COMMAND],
+                'before_script' => [...Yaml::dockerSetup([]), Plan::LOWEST_COMMAND],
                 'script' => ['vendor/bin/phpunit'],
             ],
             self::yaml($pipeline, 'tests:lowest'),
@@ -121,7 +123,7 @@ final class GitLabCiProviderTest extends TestCase
                 'image' => 'php:8.4-cli',
                 'script' => ['install-php-extensions pcov', 'vendor/bin/phpunit --coverage-clover=coverage.xml'],
                 'coverage' => '/^\s*(?:Lines|Total):\s*\d+\.\d+\s*%/',
-                'artifacts' => ['paths' => ['coverage.xml']],
+                'artifacts' => ['when' => 'always', 'paths' => ['coverage.xml']],
             ],
             self::yaml($pipeline, 'coverage'),
         );
