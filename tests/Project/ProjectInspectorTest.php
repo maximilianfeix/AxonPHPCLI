@@ -55,6 +55,51 @@ final class ProjectInspectorTest extends TestCase
         self::assertSame(['Pest', 'Pint'], self::names($project->tools));
     }
 
+    public function testCodeceptionTakesPrecedenceOverPhpUnitAndCannotMeasureCoverage(): void
+    {
+        $project = (new ProjectInspector())->inspect($this->createProject([
+            'name' => 'acme/shop',
+            'require-dev' => [
+                'phpunit/phpunit' => '^12.0',
+                'codeception/codeception' => '^5.0',
+                'rector/rector' => '^2.0',
+                'qossmic/deptrac-shim' => '^1.0',
+                'symplify/easy-coding-standard' => '^12.0',
+            ],
+        ]));
+
+        self::assertSame('acme/shop', $project->name);
+        self::assertSame(['Codeception', 'Rector', 'Deptrac', 'ECS'], self::names($project->tools));
+        self::assertNull($project->coverageTool());
+    }
+
+    public function testFindsTheToolThatMeasuresCoverage(): void
+    {
+        $project = (new ProjectInspector())->inspect($this->createProject([
+            'require-dev' => ['phpunit/phpunit' => '^12.0'],
+        ]));
+
+        $tool = $project->coverageTool();
+
+        self::assertNotNull($tool);
+        self::assertSame('PHPUnit', $tool->name);
+        self::assertSame('vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml', $tool->coverageCommand);
+    }
+
+    public function testReadsSettingsFromComposerExtra(): void
+    {
+        $project = (new ProjectInspector())->inspect($this->createProject([
+            'extra' => ['axonphp' => ['php' => ['8.4'], 'branches' => ['main', 'develop'], 'audit' => false]],
+        ]));
+
+        self::assertSame(
+            ['php' => ['8.4'], 'branches' => ['main', 'develop'], 'audit' => false],
+            $project->settings->toArray(),
+        );
+        self::assertNull($project->settings->coverage);
+        self::assertSame('8.2', $project->oldestPhpVersion());
+    }
+
     public function testFallsBackToDefaultsWithoutComposerFile(): void
     {
         $project = (new ProjectInspector())->inspect($this->createProject());
