@@ -2,16 +2,16 @@
   <title id="title">AxonPHP CLI</title>
   <desc id="desc">A CI pipeline that fits your PHP project.</desc>
   <rect width="1280" height="320" rx="16" fill="#1E2140"/>
-  <g transform="translate(48 40) scale(1.25)">
-    <rect x="12" y="24" width="104" height="80" rx="40" fill="#4F5B93"/>
-    <g fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M36 88 L58 40 L80 88"/>
-      <path d="M46 68 H94"/>
+  <g transform="translate(88 72) scale(0.75)">
+    <rect x="14" y="14" width="100" height="100" rx="26" fill="#E2E4EF"/>
+    <g fill="none" stroke="#1E2140" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M35 88 L56 38 L77 88"/>
+      <path d="M44 70 H91"/>
     </g>
-    <circle cx="94" cy="68" r="6" fill="#FFFFFF"/>
+    <circle cx="91" cy="70" r="10" fill="#1E2140"/>
   </g>
   <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
-    <text x="240" y="156" font-size="112" font-weight="700" letter-spacing="-3" fill="#FFFFFF">AxonPHP CLI</text>
-    <text x="64" y="252" font-size="48" fill="#E2E4EF">A CI pipeline that fits your PHP project.</text>
+    <text x="224" y="152" font-size="88" font-weight="700" fill="#FFFFFF">AxonPHP CLI</text>
+    <text x="224" y="224" font-size="44" fill="#E2E4EF">A CI pipeline that fits your PHP project.</text>
   </g>
 </svg>
