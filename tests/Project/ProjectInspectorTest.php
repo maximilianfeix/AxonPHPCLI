@@ -8,6 +8,7 @@ use AxonPHP\Cli\Exception\ProjectException;
 use AxonPHP\Cli\Project\PhpVersionResolver;
 use AxonPHP\Cli\Project\Project;
 use AxonPHP\Cli\Project\ProjectInspector;
+use AxonPHP\Cli\Project\ProjectSettings;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolCatalog;
 use AxonPHP\Cli\Project\ToolType;
@@ -18,6 +19,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(ProjectInspector::class)]
 #[CoversClass(ToolCatalog::class)]
 #[CoversClass(Project::class)]
+#[CoversClass(ProjectSettings::class)]
+#[CoversClass(ToolType::class)]
 final class ProjectInspectorTest extends TestCase
 {
     use TemporaryProject;
@@ -86,6 +89,63 @@ final class ProjectInspectorTest extends TestCase
         self::assertSame('vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml', $tool->coverageCommand);
     }
 
+    public function testDetectsDependencyChecksAndTheNewerAnalysers(): void
+    {
+        $project = (new ProjectInspector())->inspect($this->createProject([
+            'require-dev' => [
+                'shipmonk/composer-dependency-analyser' => '^1.8',
+                'icanhazstring/composer-unused' => '^0.9',
+                'maglnet/composer-require-checker' => '^4.0',
+                'ergebnis/composer-normalize' => '^2.0',
+                'vincentlanglet/twig-cs-fixer' => '^3.0',
+                'phparkitect/phparkitect' => '^0.5',
+            ],
+        ]));
+
+        self::assertSame(
+            [
+                'vendor/bin/phparkitect check',
+                'vendor/bin/twig-cs-fixer lint',
+                'composer normalize --dry-run',
+                'vendor/bin/composer-require-checker check',
+                'vendor/bin/composer-unused --no-progress',
+                'vendor/bin/composer-dependency-analyser',
+            ],
+            array_map(static fn (Tool $tool): string => $tool->command, $project->tools),
+        );
+        self::assertSame(
+            ['Composer Normalize', 'Composer Require Checker', 'Composer Unused', 'Composer Dependency Analyser'],
+            self::names($project->tools(ToolType::Dependencies)),
+        );
+        self::assertSame('Dependencies', ToolType::Dependencies->label());
+    }
+
+    public function testKeepsTheToolsAndSettingsWhenThePhpVersionsAreReplaced(): void
+    {
+        $project = (new ProjectInspector())->inspect($this->createProject([
+            'name' => 'acme/app',
+            'require' => ['php' => '^8.3', 'ext-intl' => '*'],
+            'require-dev' => ['phpunit/phpunit' => '^12.0'],
+            'extra' => ['axonphp' => ['min-coverage' => 87.5]],
+        ]))->withPhpVersions(['8.4']);
+
+        self::assertSame(['8.4'], $project->phpVersions);
+        self::assertSame(['intl'], $project->extensions);
+        self::assertSame(['PHPUnit'], self::names($project->tools));
+        self::assertSame('acme/app', $project->name);
+        self::assertSame('^8.3', $project->phpConstraint);
+        self::assertSame(['min-coverage' => 87.5], $project->settings->toArray());
+    }
+
+    public function testFallsBackToTheDefaultRangeWithoutAnyPhpVersion(): void
+    {
+        $project = new Project([]);
+
+        self::assertSame('8.5', $project->latestPhpVersion());
+        self::assertSame('8.2', $project->oldestPhpVersion());
+        self::assertNull($project->coverageTool());
+    }
+
     public function testReadsSettingsFromComposerExtra(): void
     {
         $project = (new ProjectInspector())->inspect($this->createProject([
@@ -127,6 +187,23 @@ final class ProjectInspectorTest extends TestCase
 
         $this->expectException(ProjectException::class);
         $this->expectExceptionMessage('is not valid JSON');
+
+        (new ProjectInspector())->inspect($directory);
+    }
+
+    public function testReportsAManifestItCannotRead(): void
+    {
+        $directory = $this->createProject('{}');
+        chmod($directory.'/composer.json', 0o000);
+
+        if (is_readable($directory.'/composer.json')) {
+            chmod($directory.'/composer.json', 0o644);
+
+            self::markTestSkipped('This system cannot make a file unreadable for the current user.');
+        }
+
+        $this->expectException(ProjectException::class);
+        $this->expectExceptionMessage('Could not read');
 
         (new ProjectInspector())->inspect($directory);
     }

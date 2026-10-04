@@ -141,6 +141,8 @@ final class GitHubActionsProvider implements Provider
                 'name' => 'coverage',
                 'path' => ToolCatalog::COVERAGE_REPORT,
             ]),
+            // After the upload, so the report is available when the threshold fails the job.
+            ...$this->runSteps(null === $plan->coverageThreshold ? [] : [$plan->coverageThreshold]),
         ];
 
         return implode("\n", [

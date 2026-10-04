@@ -18,12 +18,12 @@ final class ProviderRegistryTest extends TestCase
     {
         $registry = ProviderRegistry::default();
 
-        self::assertSame(['github', 'gitlab', 'bitbucket'], $registry->names());
+        self::assertSame(['github', 'gitlab', 'bitbucket', 'circleci'], $registry->names());
         self::assertSame(
-            ['github' => 'GitHub Actions', 'gitlab' => 'GitLab CI', 'bitbucket' => 'Bitbucket Pipelines'],
+            ['github' => 'GitHub Actions', 'gitlab' => 'GitLab CI', 'bitbucket' => 'Bitbucket Pipelines', 'circleci' => 'CircleCI'],
             $registry->labels(),
         );
-        self::assertCount(3, $registry->all());
+        self::assertCount(4, $registry->all());
     }
 
     public function testFindsProvidersCaseInsensitively(): void
@@ -37,7 +37,7 @@ final class ProviderRegistryTest extends TestCase
     public function testRejectsUnknownProviders(): void
     {
         $this->expectException(InvalidInputException::class);
-        $this->expectExceptionMessage('Unknown provider "jenkins". Supported providers: github, gitlab, bitbucket.');
+        $this->expectExceptionMessage('Unknown provider "jenkins". Supported providers: github, gitlab, bitbucket, circleci.');
 
         ProviderRegistry::default()->get('jenkins');
     }

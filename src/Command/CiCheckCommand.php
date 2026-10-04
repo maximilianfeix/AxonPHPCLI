@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AxonPHP\Cli\Command;
 
-use AxonPHP\Cli\Diff\LineDiff;
 use AxonPHP\Cli\Exception\InvalidInputException;
 use AxonPHP\Cli\Exception\ProjectException;
-use AxonPHP\Cli\Provider\Provider;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -21,12 +19,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 final class CiCheckCommand extends PipelineCommand
 {
+    private const FORMATS = ['text', 'json', 'github'];
+
     protected function configure(): void
     {
         $this
             ->addProviderArgument('CI provider to check; every pipeline found when omitted')
             ->addPipelineOptions()
             ->addWorkingDirOption()
+            ->addOption('format', null, InputOption::VALUE_REQUIRED, 'Output format (text, json, github)', 'text', self::FORMATS)
             ->setHelp(
                 <<<'HELP'
                     The <info>%command.name%</info> command regenerates the pipeline in memory and compares it
@@ -38,6 +39,16 @@ final class CiCheckCommand extends PipelineCommand
                     A pipeline goes out of date when you add a tool, change the PHP constraint or
                     edit the file by hand. Pass the same options you generated it with, or store
                     them under <comment>extra.axonphp</comment> in composer.json so no options are needed.
+
+                    In a GitHub Actions workflow, annotate the pull request with the result:
+
+                      <info>%command.full_name% --format github</info>
+
+                    Use JSON to feed the result into other tools:
+
+                      <info>%command.full_name% --format json</info>
+
+                    Run <info>ci:update</info> to bring outdated pipelines back in line.
                     HELP
             )
         ;
@@ -46,56 +57,75 @@ final class CiCheckCommand extends PipelineCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        $format = $input->getOption('format');
 
         try {
+            if (!in_array($format, self::FORMATS, true)) {
+                throw new InvalidInputException(sprintf('Unknown format "%s". Supported formats: %s.', is_scalar($format) ? (string) $format : '', implode(', ', self::FORMATS)));
+            }
+
             $context = $this->context($input);
-            $providers = $this->providersToCheck($input, $context->directory);
+            $providers = $this->requestedProviders($input, $context->directory);
         } catch (InvalidInputException $exception) {
-            $io->error($exception->getMessage());
+            $io->getErrorStyle()->error($exception->getMessage());
 
             return Command::INVALID;
         } catch (ProjectException $exception) {
-            $io->error($exception->getMessage());
+            $io->getErrorStyle()->error($exception->getMessage());
 
             return Command::FAILURE;
         }
 
-        if ([] === $providers) {
+        $states = array_map(fn ($provider): PipelineState => $this->state($context, $provider), $providers);
+        $outdated = array_filter($states, static fn (PipelineState $state): bool => !$state->isCurrent());
+        $passed = [] !== $states && [] === $outdated;
+
+        if ('json' === $format) {
+            $output->writeln(
+                json_encode($this->report($states), \JSON_THROW_ON_ERROR | \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE),
+                OutputInterface::OUTPUT_RAW,
+            );
+
+            return $passed ? Command::SUCCESS : Command::FAILURE;
+        }
+
+        if ([] === $states) {
             $io->error('No pipeline found. Run "ci:init" to create one.');
 
             return Command::FAILURE;
         }
 
-        $outdated = 0;
+        foreach ($states as $state) {
+            $path = $state->provider->path();
 
-        foreach ($providers as $provider) {
-            $file = $this->pipelineFile($context->directory, $provider);
-            $expected = $provider->render($context->project, $context->options);
-
-            if (!is_file($file)) {
-                ++$outdated;
-                $io->writeln(sprintf(' <fg=red>✗</> %s is missing', $provider->path()));
+            if ($state->isCurrent()) {
+                $io->writeln(sprintf(' <fg=green>✓</> %s is up to date', $path));
 
                 continue;
             }
 
-            $diff = LineDiff::compare((string) file_get_contents($file), $expected);
+            if ('github' === $format) {
+                // A workflow command: GitHub shows it as an annotation on the file in the pull request.
+                $output->writeln(
+                    sprintf('::error file=%s,title=Pipeline %s::Run "axonphp ci:update" and commit the result.', $path, $state->status),
+                    OutputInterface::OUTPUT_RAW,
+                );
+            }
 
-            if ([] === $diff) {
-                $io->writeln(sprintf(' <fg=green>✓</> %s is up to date', $provider->path()));
+            if (PipelineState::MISSING === $state->status) {
+                $io->writeln(sprintf(' <fg=red>✗</> %s is missing', $path));
 
                 continue;
             }
 
-            ++$outdated;
-            $io->writeln(sprintf(' <fg=red>✗</> %s is out of date', $provider->path()));
+            $io->writeln(sprintf(' <fg=red>✗</> %s is out of date', $path));
             $io->newLine();
-            $this->printDiff($io, $diff);
+            $this->printDiff($io, $state->diff);
             $io->newLine();
         }
 
-        if ($outdated > 0) {
-            $io->error('The pipeline does not match the project. Run "ci:init --force" to regenerate it.');
+        if (!$passed) {
+            $io->error('The pipeline does not match the project. Run "ci:update" to regenerate it.');
 
             return Command::FAILURE;
         }
@@ -104,38 +134,31 @@ final class CiCheckCommand extends PipelineCommand
     }
 
     /**
-     * @return list<Provider> the requested provider, or every provider with a pipeline file in the project
+     * @param list<PipelineState> $states
+     *
+     * @return array{
+     *     upToDate: bool,
+     *     pipelines: list<array{provider: string, path: string, status: string, diff: list<array{marker: string, line: string}>}>
+     * }
      */
-    private function providersToCheck(InputInterface $input, string $directory): array
+    private function report(array $states): array
     {
-        $name = $input->getArgument('provider');
+        $pipelines = [];
+        $upToDate = [] !== $states;
 
-        if (is_string($name) && '' !== $name) {
-            return [$this->providers->get($name)];
+        foreach ($states as $state) {
+            $upToDate = $upToDate && $state->isCurrent();
+            $pipelines[] = [
+                'provider' => $state->provider->name(),
+                'path' => $state->provider->path(),
+                'status' => $state->status,
+                'diff' => array_map(
+                    static fn (array $entry): array => ['marker' => $entry[0], 'line' => $entry[1]],
+                    $state->diff,
+                ),
+            ];
         }
 
-        return array_values(array_filter(
-            $this->providers->all(),
-            fn (Provider $provider): bool => is_file($this->pipelineFile($directory, $provider)),
-        ));
-    }
-
-    /**
-     * @param list<array{string, string}> $diff
-     */
-    private function printDiff(SymfonyStyle $io, array $diff): void
-    {
-        $io->writeln('   <fg=red>- in your file</>  <fg=green>+ expected</>');
-
-        foreach ($diff as [$marker, $line]) {
-            $text = OutputFormatter::escape($line);
-
-            $io->writeln(match ($marker) {
-                LineDiff::REMOVED => sprintf('   <fg=red>- %s</>', $text),
-                LineDiff::ADDED => sprintf('   <fg=green>+ %s</>', $text),
-                LineDiff::GAP => '   <fg=gray>…</>',
-                default => sprintf('     %s', $text),
-            });
-        }
+        return ['upToDate' => $upToDate, 'pipelines' => $pipelines];
     }
 }

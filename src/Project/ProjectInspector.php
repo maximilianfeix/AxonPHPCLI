@@ -172,6 +172,7 @@ final readonly class ProjectInspector
             $this->boolean($settings, 'coverage'),
             $this->boolean($settings, 'lowest'),
             $this->boolean($settings, 'audit'),
+            $this->percentage($settings, 'min-coverage'),
         );
     }
 
@@ -217,5 +218,23 @@ final readonly class ProjectInspector
         }
 
         return $value;
+    }
+
+    /**
+     * @param array<mixed> $settings
+     */
+    private function percentage(array $settings, string $key): ?float
+    {
+        $value = $settings[$key] ?? null;
+
+        if (null === $value) {
+            return null;
+        }
+
+        if ((!is_int($value) && !is_float($value)) || $value < 0 || $value > 100) {
+            throw new ProjectException(sprintf('"extra.axonphp.%s" in composer.json must be a number from 0 to 100.', $key));
+        }
+
+        return (float) $value;
     }
 }

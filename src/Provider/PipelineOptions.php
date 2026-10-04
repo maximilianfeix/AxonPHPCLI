@@ -10,15 +10,17 @@ namespace AxonPHP\Cli\Provider;
 final readonly class PipelineOptions
 {
     /**
-     * @param list<string> $branches branches whose pushes trigger the pipeline
-     * @param bool         $coverage measure code coverage on the newest PHP version
-     * @param bool         $lowest   also test the lowest allowed dependencies on the oldest PHP version
-     * @param bool         $audit    fail on dependencies with known security advisories
+     * @param list<string> $branches    branches whose pushes trigger the pipeline
+     * @param bool         $coverage    measure code coverage on the newest PHP version
+     * @param bool         $lowest      also test the lowest allowed dependencies on the oldest PHP version
+     * @param bool         $audit       fail on dependencies with known security advisories
+     * @param ?float       $minCoverage the line coverage in percent below which the coverage job fails
      */
     public function __construct(
         public array $branches = ['main'],
         public bool $coverage = false,
         public bool $lowest = false,
         public bool $audit = false,
+        public ?float $minCoverage = null,
     ) {}
 }
