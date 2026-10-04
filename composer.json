@@ -1,0 +1,67 @@
+{
+    "name": "maxim/axonphp-cli",
+    "description": "Zero-config CLI that inspects your PHP project and generates a ready-to-run CI pipeline for GitHub Actions or GitLab CI.",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "cli",
+        "php",
+        "ci",
+        "ci-cd",
+        "github-actions",
+        "gitlab-ci",
+        "generator",
+        "scaffolding"
+    ],
+    "homepage": "https://github.com/0d6v/AxonPHPCLI",
+    "support": {
+        "issues": "https://github.com/0d6v/AxonPHPCLI/issues",
+        "source": "https://github.com/0d6v/AxonPHPCLI"
+    },
+    "require": {
+        "php": "^8.2",
+        "composer/semver": "^3.4",
+        "symfony/console": "^7.3 || ^8.0"
+    },
+    "require-dev": {
+        "php-cs-fixer/shim": "^3.95",
+        "phpstan/phpstan": "^2.2",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^11.5 || ^12.0 || ^13.0",
+        "symfony/yaml": "^7.3 || ^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AxonPHP\\Cli\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AxonPHP\\Cli\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/axonphp"
+    ],
+    "config": {
+        "sort-packages": true
+    },
+    "scripts": {
+        "check": [
+            "@cs",
+            "@stan",
+            "@test"
+        ],
+        "cs": "php-cs-fixer check --diff",
+        "cs:fix": "php-cs-fixer fix",
+        "stan": "phpstan analyse --no-progress",
+        "test": "phpunit"
+    },
+    "scripts-descriptions": {
+        "check": "Run code style, static analysis and tests",
+        "cs": "Check the code style without changing files",
+        "cs:fix": "Fix the code style",
+        "stan": "Run PHPStan",
+        "test": "Run the test suite"
+    }
+}

@@ -3,18 +3,23 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../vendor/autoload.php';
+use AxonPHP\Cli\Application;
 
-use Commands\CiInitCommand;
-use Symfony\Component\Console\Application;
+$autoloaders = [
+    // Installed as a dependency: vendor/maxim/axonphp-cli/bin
+    __DIR__.'/../../../autoload.php',
+    // Running from a clone of the repository
+    __DIR__.'/../vendor/autoload.php',
+];
 
-$application = new Application(
-    'AxonPHP',
-    '0.1.0'
-);
+foreach ($autoloaders as $autoloader) {
+    if (is_file($autoloader)) {
+        require $autoloader;
 
-$application->add(
-    new CiInitCommand()
-);
+        exit((new Application())->run());
+    }
+}
 
-$application->run();
+fwrite(STDERR, 'Dependencies are missing. Run "composer install" first.'.PHP_EOL);
+
+exit(1);

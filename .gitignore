@@ -1,16 +1,21 @@
-# Composer dependencies
+# Composer
 /vendor/
+/composer.lock
+/composer.phar
 
-# Local tooling caches
-.php-cs-fixer.cache
-.phpunit.result.cache
+# Tooling caches
+/.php-cs-fixer.cache
+/.phpunit.cache/
+/.phpunit.result.cache
 
-# Test / build artifacts
-/coverage/
+# Local overrides of the distributed configs
+/.php-cs-fixer.php
+/phpstan.neon
+/phpunit.xml
+
+# Build artifacts
 /build/
-/dist/
-/tmp/
-/var/
+/coverage/
 
 # Environment files
 .env
@@ -25,4 +30,3 @@
 # OS files
 .DS_Store
 Thumbs.db
-
