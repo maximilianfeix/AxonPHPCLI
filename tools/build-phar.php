@@ -49,8 +49,9 @@ foreach (['src', 'vendor'] as $directory) {
         $path = str_replace('\\', '/', $file->getPathname());
         $relative = substr($path, strlen($root) + 1);
 
-        // Code and licenses only: no tests, documentation or executables of the dependencies.
-        if (1 !== preg_match('~\.php$|/LICENSE[^/]*$|/installed\.json$~', $relative) || 1 === preg_match('~/(?:[Tt]ests?|docs?|bin)/~', $relative)) {
+        // Dependencies read their own resource files at runtime, so only what is clearly unused is left out:
+        // tests, documentation, executables and repository metadata.
+        if (1 === preg_match('~/(?:[Tt]ests?|docs?|bin|\.github)/|\.md$|/(?:composer\.json|phpunit\.xml\.dist|\.git[a-z]+)$~', $relative)) {
             continue;
         }
 
