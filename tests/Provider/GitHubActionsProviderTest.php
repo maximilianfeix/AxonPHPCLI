@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AxonPHP\Cli\Tests\Provider;
 
+use AxonPHP\Cli\Pipeline\Plan;
 use AxonPHP\Cli\Project\Project;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolType;
@@ -15,6 +16,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(GitHubActionsProvider::class)]
+#[CoversClass(Plan::class)]
 #[CoversClass(Yaml::class)]
 final class GitHubActionsProviderTest extends TestCase
 {
@@ -88,7 +90,7 @@ final class GitHubActionsProviderTest extends TestCase
 
         self::assertSame(['tests'], array_keys((array) self::yaml($workflow, 'jobs')));
         self::assertSame(
-            ['composer validate --strict', Yaml::LINT_COMMAND],
+            ['composer validate --strict', Plan::LINT_COMMAND],
             self::commands(self::yaml($workflow, 'jobs', 'tests', 'steps')),
         );
         self::assertSame(
@@ -102,7 +104,7 @@ final class GitHubActionsProviderTest extends TestCase
         $workflow = (new GitHubActionsProvider())->render(new Project(['8.4'], usesComposer: false), new PipelineOptions(['main']));
 
         self::assertStringNotContainsString('composer', $workflow);
-        self::assertSame([Yaml::LINT_COMMAND], self::commands(self::yaml($workflow, 'jobs', 'tests', 'steps')));
+        self::assertSame([Plan::LINT_COMMAND], self::commands(self::yaml($workflow, 'jobs', 'tests', 'steps')));
     }
 
     public function testAddsCoverageLowestDependenciesAndAudit(): void

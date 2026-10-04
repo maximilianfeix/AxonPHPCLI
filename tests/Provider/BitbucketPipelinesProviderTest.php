@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AxonPHP\Cli\Tests\Provider;
 
+use AxonPHP\Cli\Pipeline\Plan;
 use AxonPHP\Cli\Project\Project;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolType;
@@ -15,6 +16,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(BitbucketPipelinesProvider::class)]
+#[CoversClass(Plan::class)]
 #[CoversClass(Yaml::class)]
 final class BitbucketPipelinesProviderTest extends TestCase
 {
@@ -48,7 +50,7 @@ final class BitbucketPipelinesProviderTest extends TestCase
         $setup = [
             'export COMPOSER_ALLOW_SUPERUSER=1',
             ...Yaml::dockerSetup(['intl']),
-            Yaml::INSTALL_COMMAND,
+            Plan::INSTALL_COMMAND,
         ];
         $quality = [
             'name' => 'Code quality',
@@ -96,7 +98,7 @@ final class BitbucketPipelinesProviderTest extends TestCase
         self::assertSame('composer audit', self::yaml($pipeline, 'definitions', 'steps', 0, 'step', 'script', 5));
         // The lowest step resolves its own dependencies instead of installing from the lock file first.
         self::assertSame(
-            ['export COMPOSER_ALLOW_SUPERUSER=1', ...Yaml::dockerSetup([]), Yaml::LOWEST_COMMAND, 'vendor/bin/phpunit'],
+            ['export COMPOSER_ALLOW_SUPERUSER=1', ...Yaml::dockerSetup([]), Plan::LOWEST_COMMAND, 'vendor/bin/phpunit'],
             self::yaml($pipeline, 'definitions', 'steps', 3, 'step', 'script'),
         );
         self::assertSame(
@@ -115,7 +117,7 @@ final class BitbucketPipelinesProviderTest extends TestCase
 
         self::assertStringNotContainsString('composer', $pipeline);
         self::assertSame(
-            [['step' => ['name' => 'Tests (PHP 8.4)', 'image' => 'php:8.4-cli', 'script' => [Yaml::LINT_COMMAND]]]],
+            [['step' => ['name' => 'Tests (PHP 8.4)', 'image' => 'php:8.4-cli', 'script' => [Plan::LINT_COMMAND]]]],
             self::yaml($pipeline, 'pipelines', 'branches', 'main'),
         );
     }

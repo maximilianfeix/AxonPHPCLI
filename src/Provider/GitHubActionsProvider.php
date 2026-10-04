@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AxonPHP\Cli\Provider;
 
+use AxonPHP\Cli\Pipeline\Plan;
+use AxonPHP\Cli\Pipeline\Step;
 use AxonPHP\Cli\Project\Project;
-use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolCatalog;
-use AxonPHP\Cli\Project\ToolType;
 
 final class GitHubActionsProvider implements Provider
 {
@@ -33,23 +33,20 @@ final class GitHubActionsProvider implements Provider
 
     public function render(Project $project, PipelineOptions $options): string
     {
-        $qualityTools = $project->tools(ToolType::StaticAnalysis, ToolType::CodeStyle);
-        $audit = $options->audit && $project->usesComposer;
-        $coverageTool = $options->coverage ? $project->coverageTool() : null;
-
+        $plan = Plan::from($project, $options);
         $jobs = [];
 
-        if ([] !== $qualityTools || $audit) {
-            $jobs[] = $this->qualityJob($project, $qualityTools, $audit);
+        if ([] !== $plan->quality) {
+            $jobs[] = $this->qualityJob($plan);
         }
 
-        $jobs[] = $this->testsJob($project, $options->lowest && $project->usesComposer);
+        $jobs[] = $this->testsJob($plan);
 
-        if (null !== $coverageTool) {
-            $jobs[] = $this->coverageJob($project, $coverageTool);
+        if (null !== $plan->coverage) {
+            $jobs[] = $this->coverageJob($plan, $plan->coverage);
         }
 
-        return $this->preamble($options->branches)."\n".implode("\n\n", $jobs)."\n";
+        return $this->preamble($plan->branches)."\n".implode("\n\n", $jobs)."\n";
     }
 
     /**
@@ -78,60 +75,44 @@ final class GitHubActionsProvider implements Provider
         ]);
     }
 
-    /**
-     * @param list<Tool> $tools
-     */
-    private function qualityJob(Project $project, array $tools, bool $audit): string
+    private function qualityJob(Plan $plan): string
     {
-        $steps = $this->setupSteps($project, Yaml::quote($project->latestPhpVersion()));
-
-        if ($audit) {
-            $steps[] = $this->step('Security audit (Composer)', run: Yaml::AUDIT_COMMAND);
-        }
-
-        foreach ($tools as $tool) {
-            $steps[] = $this->toolStep($tool);
-        }
-
         return implode("\n", [
             '  quality:',
             '    name: Code quality',
             '    runs-on: ubuntu-latest',
             '',
             '    steps:',
-            implode("\n\n", $steps),
+            implode("\n\n", [
+                ...$this->setupSteps($plan, Yaml::quote($plan->latestPhp)),
+                ...$this->runSteps($plan->quality),
+            ]),
         ]);
     }
 
-    private function testsJob(Project $project, bool $lowest): string
+    private function testsJob(Plan $plan): string
     {
-        $steps = $this->setupSteps(
-            $project,
-            '${{ matrix.php }}',
-            validate: true,
-            dependencies: $lowest ? '${{ matrix.dependencies }}' : null,
-        );
-        $tools = $project->tools(ToolType::Tests);
+        $steps = [
+            ...$this->setupSteps(
+                $plan,
+                '${{ matrix.php }}',
+                validate: true,
+                dependencies: $plan->lowest ? '${{ matrix.dependencies }}' : null,
+            ),
+            ...$this->runSteps($plan->tests),
+        ];
 
-        foreach ($tools as $tool) {
-            $steps[] = $this->toolStep($tool);
-        }
-
-        if ([] === $tools) {
-            $steps[] = $this->step('Lint PHP files', run: Yaml::LINT_COMMAND);
-        }
-
-        $matrix = ['        php: '.Yaml::inlineList($project->phpVersions)];
+        $matrix = ['        php: '.Yaml::inlineList($plan->phpVersions)];
         $name = 'Tests (PHP ${{ matrix.php }})';
 
-        if ($lowest) {
+        if ($plan->lowest) {
             // The lowest dependencies only need to hold on the oldest PHP version the project supports.
             $name = 'Tests (PHP ${{ matrix.php }}, ${{ matrix.dependencies }} dependencies)';
             $matrix = [
                 ...$matrix,
                 '        dependencies: '.Yaml::inlineList(['highest']),
                 '        include:',
-                '          - php: '.Yaml::quote($project->oldestPhpVersion()),
+                '          - php: '.Yaml::quote($plan->oldestPhp),
                 '            dependencies: '.Yaml::quote('lowest'),
             ];
         }
@@ -151,14 +132,16 @@ final class GitHubActionsProvider implements Provider
         ]);
     }
 
-    private function coverageJob(Project $project, Tool $tool): string
+    private function coverageJob(Plan $plan, Step $coverage): string
     {
-        $steps = $this->setupSteps($project, Yaml::quote($project->latestPhpVersion()), coverage: 'pcov');
-        $steps[] = $this->step(sprintf('Code coverage (%s)', $tool->name), run: $tool->coverageCommand);
-        $steps[] = $this->step('Upload coverage report', uses: self::UPLOAD_ARTIFACT, with: [
-            'name' => 'coverage',
-            'path' => ToolCatalog::COVERAGE_REPORT,
-        ]);
+        $steps = [
+            ...$this->setupSteps($plan, Yaml::quote($plan->latestPhp), coverage: 'pcov'),
+            ...$this->runSteps([$coverage]),
+            $this->step('Upload coverage report', uses: self::UPLOAD_ARTIFACT, with: [
+                'name' => 'coverage',
+                'path' => ToolCatalog::COVERAGE_REPORT,
+            ]),
+        ];
 
         return implode("\n", [
             '  coverage:',
@@ -177,7 +160,7 @@ final class GitHubActionsProvider implements Provider
      * @return list<string>
      */
     private function setupSteps(
-        Project $project,
+        Plan $plan,
         string $phpVersion,
         bool $validate = false,
         string $coverage = 'none',
@@ -185,8 +168,8 @@ final class GitHubActionsProvider implements Provider
     ): array {
         $php = ['php-version' => $phpVersion];
 
-        if ([] !== $project->extensions) {
-            $php['extensions'] = implode(', ', $project->extensions);
+        if ([] !== $plan->extensions) {
+            $php['extensions'] = implode(', ', $plan->extensions);
         }
 
         $php['coverage'] = $coverage;
@@ -196,12 +179,12 @@ final class GitHubActionsProvider implements Provider
             $this->step('Set up PHP', uses: self::SETUP_PHP, with: $php),
         ];
 
-        if (!$project->usesComposer) {
+        if (!$plan->usesComposer) {
             return $steps;
         }
 
         if ($validate) {
-            $steps[] = $this->step('Validate composer.json', run: 'composer validate --strict');
+            $steps[] = $this->step('Validate composer.json', run: Plan::VALIDATE_COMMAND);
         }
 
         $steps[] = $this->step(
@@ -213,9 +196,14 @@ final class GitHubActionsProvider implements Provider
         return $steps;
     }
 
-    private function toolStep(Tool $tool): string
+    /**
+     * @param list<Step> $steps
+     *
+     * @return list<string>
+     */
+    private function runSteps(array $steps): array
     {
-        return $this->step(sprintf('%s (%s)', $tool->type->label(), $tool->name), run: $tool->command);
+        return array_map(fn (Step $step): string => $this->step($step->name, run: $step->command), $steps);
     }
 
     /**
