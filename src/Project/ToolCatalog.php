@@ -15,6 +15,9 @@ final class ToolCatalog
     /** Where Composer puts the tools' executables unless the project configures another directory. */
     public const DEFAULT_BIN_DIR = 'vendor/bin';
 
+    /** Test runners with suites of their own, which run in addition to the PHPUnit family. */
+    private const STANDALONE_RUNNERS = ['Behat', 'PHPSpec'];
+
     /**
      * @param list<string> $packages names of the packages required by the project
      * @param string       $binDir   the project's Composer "bin-dir", relative to its root
@@ -31,8 +34,8 @@ final class ToolCatalog
                 continue;
             }
 
-            // Pest and Codeception ship with PHPUnit, so only the first matching test runner counts.
-            if (ToolType::Tests === $tool->type) {
+            // Pest, Codeception and ParaTest ship with PHPUnit, so only the first matching runner of that family counts.
+            if (ToolType::Tests === $tool->type && !in_array($tool->name, self::STANDALONE_RUNNERS, true)) {
                 if ($hasTestRunner) {
                     continue;
                 }
@@ -61,10 +64,16 @@ final class ToolCatalog
             ],
             [['codeception/codeception'], new Tool('Codeception', ToolType::Tests, $bin('codecept').' run')],
             [
+                ['brianium/paratest'],
+                new Tool('ParaTest', ToolType::Tests, $bin('paratest'), $bin('paratest').' --coverage-text'.$clover),
+            ],
+            [
                 ['phpunit/phpunit'],
                 new Tool('PHPUnit', ToolType::Tests, $bin('phpunit'), $bin('phpunit').' --coverage-text'.$clover),
             ],
             [['symfony/phpunit-bridge'], new Tool('PHPUnit Bridge', ToolType::Tests, $bin('simple-phpunit'))],
+            [['phpspec/phpspec'], new Tool('PHPSpec', ToolType::Tests, $bin('phpspec').' run --no-interaction')],
+            [['behat/behat'], new Tool('Behat', ToolType::Tests, $bin('behat').' --no-interaction')],
             [
                 ['phpstan/phpstan', 'larastan/larastan', 'nunomaduro/larastan'],
                 new Tool('PHPStan', ToolType::StaticAnalysis, $bin('phpstan').' analyse --no-progress'),

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-04
+
+### Added
+
+- A PHAR build, `axonphp.phar`, attached to every release together with its
+  SHA-256 checksum. `composer phar` builds it locally.
+- Detection of ParaTest, PHPSpec and Behat. ParaTest replaces PHPUnit and can
+  measure coverage; PHPSpec and Behat run in addition to the PHPUnit family.
+- The website has a playground: four example projects, each rendered for all
+  four providers by the code the command runs.
+
+### Changed
+
+- The website is redesigned: dark by default with a light theme, a filter for
+  the tool table and a section on keeping pipelines in sync.
+
 ## [0.4.0] - 2026-10-04
 
 ### Added
@@ -123,7 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ci:init github` command that copies a static GitHub Actions workflow into
   the project.
 
-[Unreleased]: https://github.com/maximilianfeix/AxonPHPCLI/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/maximilianfeix/AxonPHPCLI/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.5.0
 [0.4.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.4.0
 [0.3.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.3.0
 [0.2.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.2.0

@@ -36,6 +36,7 @@ composer check
 | `composer cs:fix` | Fixes the code style              |
 | `composer ci:check` | Checks that the CI workflow matches the project |
 | `composer site`   | Rebuilds the website in `docs/`   |
+| `composer phar`   | Builds `build/axonphp.phar`       |
 
 ## How the code is organised
 
