@@ -8,7 +8,7 @@ new providers are all welcome.
 You need PHP 8.2 or newer and [Composer](https://getcomposer.org/).
 
 ```bash
-git clone https://github.com/0d6v/AxonPHPCLI.git
+git clone https://github.com/maximilianfeix/AxonPHPCLI.git
 cd AxonPHPCLI
 composer install
 ```

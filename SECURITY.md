@@ -9,7 +9,7 @@ Security fixes are released for the latest minor version.
 Please do not open a public issue for security problems.
 
 Report them privately through
-[GitHub security advisories](https://github.com/0d6v/AxonPHPCLI/security/advisories/new).
+[GitHub security advisories](https://github.com/maximilianfeix/AxonPHPCLI/security/advisories/new).
 Include what you found, how to reproduce it, and the version you tested.
 
 You can expect a first response within a week. Once a fix is released, the

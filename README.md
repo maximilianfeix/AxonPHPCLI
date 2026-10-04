@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/0d6v/AxonPHPCLI/actions/workflows/ci.yml"><img src="https://github.com/0d6v/AxonPHPCLI/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://github.com/maximilianfeix/AxonPHPCLI/actions/workflows/ci.yml"><img src="https://github.com/maximilianfeix/AxonPHPCLI/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <img src="https://img.shields.io/badge/php-8.2%20%E2%80%93%208.5-777BB4?logo=php&logoColor=white" alt="PHP 8.2 to 8.5">
   <img src="https://img.shields.io/badge/PHPStan-level%20max-2a5ea7" alt="PHPStan level max">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-3da639" alt="MIT license"></a>
@@ -58,7 +58,7 @@ of the project you want a pipeline for.
 The package is not on Packagist yet, so point Composer at the repository first:
 
 ```bash
-composer config repositories.axonphp vcs https://github.com/0d6v/AxonPHPCLI
+composer config repositories.axonphp vcs https://github.com/maximilianfeix/AxonPHPCLI
 composer require --dev maxim/axonphp-cli:dev-main
 ```
 
@@ -294,7 +294,7 @@ AxonPHP only touches it again when you run the command with `--force`.
 ## Development
 
 ```bash
-git clone https://github.com/0d6v/AxonPHPCLI.git
+git clone https://github.com/maximilianfeix/AxonPHPCLI.git
 cd AxonPHPCLI
 composer install
 composer check   # code style, PHPStan (level max) and tests

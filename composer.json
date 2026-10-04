@@ -13,10 +13,10 @@
         "generator",
         "scaffolding"
     ],
-    "homepage": "https://github.com/0d6v/AxonPHPCLI",
+    "homepage": "https://github.com/maximilianfeix/AxonPHPCLI",
     "support": {
-        "issues": "https://github.com/0d6v/AxonPHPCLI/issues",
-        "source": "https://github.com/0d6v/AxonPHPCLI"
+        "issues": "https://github.com/maximilianfeix/AxonPHPCLI/issues",
+        "source": "https://github.com/maximilianfeix/AxonPHPCLI"
     },
     "require": {
         "php": "^8.2",
