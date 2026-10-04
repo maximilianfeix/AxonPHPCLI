@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-labelledby="title desc">
+  <title id="title">AxonPHP CLI</title>
+  <desc id="desc">One command. A CI pipeline that fits your PHP project.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1024"/>
+      <stop offset="1" stop-color="#1b1440"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8b93ff"/>
+      <stop offset="1" stop-color="#4fd8c4"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.82" cy="0.3" r="0.6">
+      <stop offset="0" stop-color="#6d5cff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#6d5cff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.035"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="360" rx="24" fill="url(#bg)"/>
+  <rect width="1280" height="360" rx="24" fill="url(#grid)"/>
+  <rect width="1280" height="360" rx="24" fill="url(#glow)"/>
+
+  <!-- Mark: a signal travelling along an axon and ending in a passed check -->
+  <g transform="translate(96 108)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 122 L72 22 L122 122" stroke="url(#accent)" stroke-width="12"/>
+    <circle cx="72" cy="22" r="13" fill="#0d1024" stroke="#8b93ff" stroke-width="6"/>
+    <circle cx="22" cy="122" r="13" fill="#0d1024" stroke="#8b93ff" stroke-width="6"/>
+    <circle cx="122" cy="122" r="13" fill="#4fd8c4" stroke="#4fd8c4" stroke-width="6"/>
+    <path d="M115 122 l5 5 l9 -10" stroke="#0d1024" stroke-width="4"/>
+  </g>
+
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="272" y="168" font-size="76" font-weight="700" fill="#ffffff" letter-spacing="-1.5">Axon<tspan fill="#8b93ff">PHP</tspan> <tspan font-weight="300" fill="#c9cdf5">CLI</tspan></text>
+    <text x="275" y="216" font-size="25" fill="#aab0d6">One command. A CI pipeline that fits your PHP project.</text>
+  </g>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="20">
+    <rect x="272" y="252" width="452" height="50" rx="10" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="294" y="284" fill="#4fd8c4">$<tspan fill="#e8eaff" dx="12">vendor/bin/axonphp ci:init github</tspan></text>
+  </g>
+
+  <!-- Pipeline: detect, analyse, test -->
+  <g transform="translate(968 96)" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19">
+    <path d="M19 38 V132" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+    <g>
+      <circle cx="19" cy="19" r="19" fill="#4fd8c4" fill-opacity="0.16" stroke="#4fd8c4" stroke-width="2"/>
+      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#4fd8c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="56" y="25" fill="#e8eaff">Code style</text>
+    </g>
+    <g transform="translate(0 66)">
+      <circle cx="19" cy="19" r="19" fill="#4fd8c4" fill-opacity="0.16" stroke="#4fd8c4" stroke-width="2"/>
+      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#4fd8c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="56" y="25" fill="#e8eaff">Static analysis</text>
+    </g>
+    <g transform="translate(0 132)">
+      <circle cx="19" cy="19" r="19" fill="#4fd8c4" fill-opacity="0.16" stroke="#4fd8c4" stroke-width="2"/>
+      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#4fd8c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="56" y="25" fill="#e8eaff">Tests on PHP 8.2 – 8.5</text>
+    </g>
+  </g>
+</svg>
