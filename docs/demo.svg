@@ -1,33 +1,70 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 452" width="860" height="452" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 496" width="860" height="496" role="img" aria-labelledby="title desc">
   <title id="title">Terminal session running axonphp ci:init github</title>
   <desc id="desc">The command prints the detected PHP versions, extensions and tools, then reports that .github/workflows/ci.yml was created.</desc>
 
-  <rect width="860" height="452" rx="12" fill="#0f1226"/>
-  <rect width="860" height="452" rx="12" fill="none" stroke="#ffffff" stroke-opacity="0.1"/>
-  <path d="M0 12 a12 12 0 0 1 12 -12 h836 a12 12 0 0 1 12 12 v28 h-860 z" fill="#191d38"/>
+  <style>
+    /* Plays once and holds the final frame: nothing keeps moving while you read. */
+    .line { opacity: 0; animation: 4s linear 1 both; }
+    .l1 { animation-name: l1; }
+    .l2 { animation-name: l2; }
+    .l3 { animation-name: l3; }
+    .l4 { animation-name: l4; }
+    .l5 { animation-name: l5; }
+    .l6 { animation-name: l6; }
+    .l7 { animation-name: l7; }
+    .l8 { animation-name: l8; }
+    .l9 { animation-name: l9; }
+    .cursor { animation: blink 1s steps(2, start) 5; }
+    @keyframes l1 { 0%, 3% { opacity: 0 } 9%, 100% { opacity: 1 } }
+    @keyframes l2 { 0%, 27% { opacity: 0 } 33%, 100% { opacity: 1 } }
+    @keyframes l3 { 0%, 36% { opacity: 0 } 42%, 100% { opacity: 1 } }
+    @keyframes l4 { 0%, 42% { opacity: 0 } 48%, 100% { opacity: 1 } }
+    @keyframes l5 { 0%, 48% { opacity: 0 } 54%, 100% { opacity: 1 } }
+    @keyframes l6 { 0%, 54% { opacity: 0 } 60%, 100% { opacity: 1 } }
+    @keyframes l7 { 0%, 60% { opacity: 0 } 66%, 100% { opacity: 1 } }
+    @keyframes l8 { 0%, 66% { opacity: 0 } 72%, 100% { opacity: 1 } }
+    @keyframes l9 { 0%, 84% { opacity: 0 } 90%, 100% { opacity: 1 } }
+    @keyframes blink { to { visibility: hidden } }
+    @media (prefers-reduced-motion: reduce) {
+      .line { animation: none; opacity: 1; }
+      .cursor { animation: none; }
+    }
+  </style>
+
+  <rect width="860" height="496" rx="12" fill="#1B1D36"/>
+  <rect x="0.5" y="0.5" width="859" height="495" rx="12" fill="none" stroke="#8892BF" stroke-opacity="0.35"/>
+  <path d="M0 12 a12 12 0 0 1 12 -12 h836 a12 12 0 0 1 12 12 v28 h-860 z" fill="#2A2E57"/>
   <circle cx="24" cy="20" r="6" fill="#ff5f57"/>
   <circle cx="44" cy="20" r="6" fill="#febc2e"/>
   <circle cx="64" cy="20" r="6" fill="#28c840"/>
-  <text x="430" y="25" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#8a90b8">acme-app — axonphp</text>
+  <text x="430" y="25" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#C7CBEA">acme-app — axonphp</text>
 
-  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" fill="#d7dbf5" xml:space="preserve">
-    <text x="24" y="74"><tspan fill="#4fd8c4">$</tspan> vendor/bin/axonphp ci:init github</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" fill="#E2E4EF">
+    <text class="line l1" x="24" y="74"><tspan fill="#7EE0A1">$</tspan><tspan dx="9">vendor/bin/axonphp ci:init github --coverage</tspan></text>
 
-    <text x="24" y="118" fill="#f0c674">AxonPHP CLI · GitHub Actions</text>
-    <text x="24" y="140" fill="#f0c674">============================</text>
+    <g class="line l2">
+      <text x="24" y="118" fill="#F0C674">AxonPHP CLI · GitHub Actions</text>
+      <text x="24" y="140" fill="#F0C674">============================</text>
+      <text x="32" y="184" fill="#6C739F">----------------- ----------------------------------------</text>
+    </g>
 
-    <text x="32" y="184" fill="#5c6390">----------------- ----------------------------------------</text>
-    <text y="206"><tspan x="41" fill="#7ee0a1">Project</tspan><tspan x="192">/home/you/acme-app</tspan></text>
-    <text y="228"><tspan x="41" fill="#7ee0a1">PHP versions</tspan><tspan x="192">8.2, 8.3, 8.4, 8.5</tspan><tspan fill="#f0c674" dx="8">(from "php": "^8.2")</tspan></text>
-    <text y="250"><tspan x="41" fill="#7ee0a1">Extensions</tspan><tspan x="192">intl, pdo</tspan></text>
-    <text y="272"><tspan x="41" fill="#7ee0a1">Tests</tspan><tspan x="192">PHPUnit</tspan></text>
-    <text y="294"><tspan x="41" fill="#7ee0a1">Static analysis</tspan><tspan x="192">PHPStan</tspan></text>
-    <text y="316"><tspan x="41" fill="#7ee0a1">Code style</tspan><tspan x="192">PHP-CS-Fixer</tspan></text>
-    <text x="32" y="338" fill="#5c6390">----------------- ----------------------------------------</text>
+    <text class="line l3" y="206"><tspan x="41" fill="#7EE0A1">Project</tspan><tspan x="192">/home/you/acme-app</tspan></text>
+    <text class="line l4" y="228"><tspan x="41" fill="#7EE0A1">PHP versions</tspan><tspan x="192">8.2, 8.3, 8.4, 8.5</tspan><tspan fill="#F0C674" dx="8">(from "php": "^8.2")</tspan></text>
+    <text class="line l5" y="250"><tspan x="41" fill="#7EE0A1">Extensions</tspan><tspan x="192">intl, pdo</tspan></text>
+    <text class="line l6" y="272"><tspan x="41" fill="#7EE0A1">Tests</tspan><tspan x="192">PHPUnit</tspan></text>
+    <text class="line l7" y="294"><tspan x="41" fill="#7EE0A1">Static analysis</tspan><tspan x="192">PHPStan</tspan></text>
+    <g class="line l8">
+      <text y="316"><tspan x="41" fill="#7EE0A1">Code style</tspan><tspan x="192">PHP-CS-Fixer</tspan></text>
+      <text y="338"><tspan x="41" fill="#7EE0A1">Branches</tspan><tspan x="192">main</tspan></text>
+      <text y="360"><tspan x="41" fill="#7EE0A1">Extras</tspan><tspan x="192">coverage</tspan></text>
+      <text x="32" y="382" fill="#6C739F">----------------- ----------------------------------------</text>
+    </g>
 
-    <rect x="24" y="362" width="812" height="34" rx="4" fill="#1f8a4c"/>
-    <text x="36" y="384" fill="#ffffff" font-weight="700">[OK] Created .github/workflows/ci.yml</text>
-
-    <text x="32" y="426" fill="#8a90b8">Commit the file and push to see your first pipeline run.</text>
+    <g class="line l9">
+      <rect x="24" y="406" width="812" height="34" rx="4" fill="#1A7A42"/>
+      <text x="36" y="428" fill="#ffffff" font-weight="700">[OK] Created .github/workflows/ci.yml</text>
+      <text x="32" y="470" fill="#C7CBEA">Commit the file and push to see your first pipeline run.</text>
+      <rect class="cursor" x="496" y="458" width="8" height="16" fill="#C7CBEA"/>
+    </g>
   </g>
 </svg>

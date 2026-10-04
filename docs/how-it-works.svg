@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 300" width="860" height="300" role="img" aria-labelledby="title desc">
+  <title id="title">How AxonPHP CLI works</title>
+  <desc id="desc">AxonPHP reads composer.json, detects PHP versions, extensions and tools, and writes a pipeline file for GitHub Actions, GitLab CI or Bitbucket Pipelines.</desc>
+
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8892BF"/>
+      <stop offset="1" stop-color="#4F5B93"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8892BF"/>
+    </marker>
+  </defs>
+
+  <rect width="860" height="300" rx="12" fill="#1B1D36"/>
+  <rect x="0.5" y="0.5" width="859" height="299" rx="12" fill="none" stroke="#8892BF" stroke-opacity="0.35"/>
+
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="32" y="44" font-size="13" font-weight="600" fill="#8892BF" letter-spacing="1.5">1 · READ</text>
+    <text x="322" y="44" font-size="13" font-weight="600" fill="#8892BF" letter-spacing="1.5">2 · DETECT</text>
+    <text x="612" y="44" font-size="13" font-weight="600" fill="#8892BF" letter-spacing="1.5">3 · WRITE</text>
+  </g>
+
+  <!-- 1: composer.json -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="13">
+    <rect x="32" y="60" width="216" height="208" rx="10" fill="#2A2E57"/>
+    <text x="48" y="88" fill="#C7CBEA" font-weight="700">composer.json</text>
+    <path d="M48 100 H232" stroke="#ffffff" stroke-opacity="0.12"/>
+    <text x="48" y="126" fill="#E2E4EF">"php": <tspan fill="#F0C674">"^8.2"</tspan></text>
+    <text x="48" y="150" fill="#E2E4EF">"ext-intl": <tspan fill="#F0C674">"*"</tspan></text>
+    <text x="48" y="174" fill="#E2E4EF">"phpunit/phpunit"</text>
+    <text x="48" y="198" fill="#E2E4EF">"phpstan/phpstan"</text>
+    <text x="48" y="222" fill="#E2E4EF">"laravel/pint"</text>
+    <text x="48" y="248" fill="#A9B0DD">extra.axonphp</text>
+  </g>
+
+  <path d="M256 164 H306" stroke="#8892BF" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 2: detection -->
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">
+    <rect x="322" y="60" width="216" height="208" rx="10" fill="#2A2E57"/>
+    <g transform="translate(338 76) scale(0.3125)">
+      <rect width="128" height="128" rx="28" fill="url(#tile)"/>
+      <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M35 92 L64 34 L93 92" stroke-width="10"/>
+        <path d="M50 72 H78" stroke-width="7" stroke-opacity="0.55"/>
+      </g>
+      <circle cx="64" cy="34" r="10" fill="#ffffff"/>
+      <circle cx="35" cy="92" r="10" fill="#ffffff"/>
+      <circle cx="93" cy="92" r="15" fill="#ffffff"/>
+    </g>
+    <text x="390" y="102" fill="#ffffff" font-weight="700" font-size="16">AxonPHP</text>
+    <g fill="#E2E4EF">
+      <circle cx="346" cy="146" r="4" fill="#7EE0A1"/><text x="360" y="151">PHP 8.2 – 8.5 matrix</text>
+      <circle cx="346" cy="174" r="4" fill="#7EE0A1"/><text x="360" y="179">Extensions to install</text>
+      <circle cx="346" cy="202" r="4" fill="#7EE0A1"/><text x="360" y="207">Tests, analysis, style</text>
+      <circle cx="346" cy="230" r="4" fill="#7EE0A1"/><text x="360" y="235">Coverage, audit, lowest</text>
+    </g>
+  </g>
+
+  <path d="M546 164 H596" stroke="#8892BF" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 3: pipeline files -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="13">
+    <rect x="612" y="60" width="216" height="60" rx="10" fill="#2A2E57"/>
+    <text x="628" y="85" fill="#ffffff" font-weight="700">GitHub Actions</text>
+    <text x="628" y="105" fill="#C7CBEA" font-size="12">.github/workflows/ci.yml</text>
+
+    <rect x="612" y="134" width="216" height="60" rx="10" fill="#2A2E57"/>
+    <text x="628" y="159" fill="#ffffff" font-weight="700">GitLab CI</text>
+    <text x="628" y="179" fill="#C7CBEA" font-size="12">.gitlab-ci.yml</text>
+
+    <rect x="612" y="208" width="216" height="60" rx="10" fill="#2A2E57"/>
+    <text x="628" y="233" fill="#ffffff" font-weight="700">Bitbucket Pipelines</text>
+    <text x="628" y="253" fill="#C7CBEA" font-size="12">bitbucket-pipelines.yml</text>
+  </g>
+</svg>

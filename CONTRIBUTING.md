@@ -33,6 +33,8 @@ composer check
 | `composer stan`   | Runs PHPStan at the maximum level |
 | `composer cs`     | Checks the code style             |
 | `composer cs:fix` | Fixes the code style              |
+| `composer ci:check` | Checks that the CI workflow matches the project |
+| `composer site`   | Rebuilds the website in `docs/`   |
 
 ## How the code is organised
 
@@ -40,13 +42,16 @@ composer check
 | --------------- | -------------------------------------------------------------------- |
 | `src/Project/`  | Reads `composer.json` and describes the project (`ProjectInspector`) |
 | `src/Provider/` | Renders a pipeline for one CI service from a `Project`               |
-| `src/Command/`  | The console command: input validation, output, writing the file      |
+| `src/Command/`  | The console commands: input validation, output, writing the file     |
+| `src/Diff/`     | The line diff printed by `ci:check`                                  |
+| `site/`         | Template and build script for the website in `docs/`                 |
 
 ### Detecting another tool
 
 Add one entry to `ToolCatalog::definitions()` with the Composer package names
 that provide the tool, its type and the command CI should run. Add a case to
-`ProjectInspectorTest`.
+`ProjectInspectorTest`, then run `composer site` to update the table on the
+website.
 
 ### Adding a provider
 
@@ -54,7 +59,8 @@ that provide the tool, its type and the command CI should run. Add a case to
 2. Register it in `ProviderRegistry::default()`.
 3. Add a test that parses the rendered YAML and asserts on its structure, like
    `GitHubActionsProviderTest`.
-4. Document it in the README.
+4. Document it in the README and run `composer site`, which picks the new
+   provider up for the website.
 
 ## Pull requests
 

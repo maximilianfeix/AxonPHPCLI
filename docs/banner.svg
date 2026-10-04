@@ -4,62 +4,71 @@
 
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0d1024"/>
-      <stop offset="1" stop-color="#1b1440"/>
+      <stop offset="0" stop-color="#1E2140"/>
+      <stop offset="0.6" stop-color="#343A6B"/>
+      <stop offset="1" stop-color="#4F5B93"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#8b93ff"/>
-      <stop offset="1" stop-color="#4fd8c4"/>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8892BF"/>
+      <stop offset="1" stop-color="#4F5B93"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.82" cy="0.3" r="0.6">
-      <stop offset="0" stop-color="#6d5cff" stop-opacity="0.35"/>
-      <stop offset="1" stop-color="#6d5cff" stop-opacity="0"/>
-    </radialGradient>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.035"/>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ffffff" fill-opacity="0.06"/>
     </pattern>
+    <clipPath id="frame">
+      <rect width="1280" height="360" rx="24"/>
+    </clipPath>
   </defs>
 
-  <rect width="1280" height="360" rx="24" fill="url(#bg)"/>
-  <rect width="1280" height="360" rx="24" fill="url(#grid)"/>
-  <rect width="1280" height="360" rx="24" fill="url(#glow)"/>
+  <g clip-path="url(#frame)">
+    <rect width="1280" height="360" fill="url(#bg)"/>
+    <rect width="1280" height="360" fill="url(#dots)"/>
+    <!-- A nod to the PHP oval -->
+    <ellipse cx="1080" cy="150" rx="420" ry="230" fill="#8892BF" fill-opacity="0.13" transform="rotate(-8 1080 150)"/>
+    <ellipse cx="1080" cy="150" rx="300" ry="160" fill="none" stroke="#C7CBEA" stroke-opacity="0.14" stroke-width="2" transform="rotate(-8 1080 150)"/>
+  </g>
 
-  <!-- Mark: a signal travelling along an axon and ending in a passed check -->
-  <g transform="translate(96 108)" fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M22 122 L72 22 L122 122" stroke="url(#accent)" stroke-width="12"/>
-    <circle cx="72" cy="22" r="13" fill="#0d1024" stroke="#8b93ff" stroke-width="6"/>
-    <circle cx="22" cy="122" r="13" fill="#0d1024" stroke="#8b93ff" stroke-width="6"/>
-    <circle cx="122" cy="122" r="13" fill="#4fd8c4" stroke="#4fd8c4" stroke-width="6"/>
-    <path d="M115 122 l5 5 l9 -10" stroke="#0d1024" stroke-width="4"/>
+  <!-- Logo -->
+  <g transform="translate(88 104) scale(1.1875)">
+    <rect width="128" height="128" rx="28" fill="url(#tile)"/>
+    <rect width="128" height="128" rx="28" fill="none" stroke="#ffffff" stroke-opacity="0.25"/>
+    <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M35 92 L64 34 L93 92" stroke-width="10"/>
+      <path d="M50 72 H78" stroke-width="7" stroke-opacity="0.55"/>
+    </g>
+    <circle cx="64" cy="34" r="10" fill="#ffffff"/>
+    <circle cx="35" cy="92" r="10" fill="#ffffff"/>
+    <circle cx="93" cy="92" r="15" fill="#ffffff"/>
+    <path d="M86 92 l5 5 l9 -10" fill="none" stroke="#4F5B93" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
   <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
-    <text x="272" y="168" font-size="76" font-weight="700" fill="#ffffff" letter-spacing="-1.5">Axon<tspan fill="#8b93ff">PHP</tspan> <tspan font-weight="300" fill="#c9cdf5">CLI</tspan></text>
-    <text x="275" y="216" font-size="25" fill="#aab0d6">One command. A CI pipeline that fits your PHP project.</text>
+    <text x="284" y="166" font-size="76" font-weight="700" fill="#ffffff" letter-spacing="-1.5">Axon<tspan fill="#C7CBEA" font-style="italic" font-weight="800">PHP</tspan><tspan font-weight="300" fill="#E2E4EF" dx="18">CLI</tspan></text>
+    <text x="287" y="214" font-size="25" fill="#C7CBEA">One command. A CI pipeline that fits your PHP project.</text>
   </g>
 
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="20">
-    <rect x="272" y="252" width="452" height="50" rx="10" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
-    <text x="294" y="284" fill="#4fd8c4">$<tspan fill="#e8eaff" dx="12">vendor/bin/axonphp ci:init github</tspan></text>
+    <rect x="284" y="248" width="452" height="50" rx="10" fill="#14162B" fill-opacity="0.55" stroke="#ffffff" stroke-opacity="0.16"/>
+    <text x="306" y="280" fill="#7EE0A1">$<tspan fill="#ffffff" dx="12">vendor/bin/axonphp ci:init github</tspan></text>
   </g>
 
-  <!-- Pipeline: detect, analyse, test -->
-  <g transform="translate(968 96)" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19">
-    <path d="M19 38 V132" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+  <!-- What the generated pipeline runs -->
+  <g transform="translate(968 92)" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19">
+    <path d="M19 38 V132" stroke="#ffffff" stroke-opacity="0.25" stroke-width="2"/>
     <g>
-      <circle cx="19" cy="19" r="19" fill="#4fd8c4" fill-opacity="0.16" stroke="#4fd8c4" stroke-width="2"/>
-      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#4fd8c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="56" y="25" fill="#e8eaff">Code style</text>
+      <circle cx="19" cy="19" r="19" fill="#7EE0A1" fill-opacity="0.16" stroke="#7EE0A1" stroke-width="2"/>
+      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#7EE0A1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="56" y="25" fill="#ffffff">Code style</text>
     </g>
     <g transform="translate(0 66)">
-      <circle cx="19" cy="19" r="19" fill="#4fd8c4" fill-opacity="0.16" stroke="#4fd8c4" stroke-width="2"/>
-      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#4fd8c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="56" y="25" fill="#e8eaff">Static analysis</text>
+      <circle cx="19" cy="19" r="19" fill="#7EE0A1" fill-opacity="0.16" stroke="#7EE0A1" stroke-width="2"/>
+      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#7EE0A1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="56" y="25" fill="#ffffff">Static analysis</text>
     </g>
     <g transform="translate(0 132)">
-      <circle cx="19" cy="19" r="19" fill="#4fd8c4" fill-opacity="0.16" stroke="#4fd8c4" stroke-width="2"/>
-      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#4fd8c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="56" y="25" fill="#e8eaff">Tests on PHP 8.2 – 8.5</text>
+      <circle cx="19" cy="19" r="19" fill="#7EE0A1" fill-opacity="0.16" stroke="#7EE0A1" stroke-width="2"/>
+      <path d="M11 19 l6 6 l11 -12" fill="none" stroke="#7EE0A1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="56" y="25" fill="#ffffff">Tests on PHP 8.2 – 8.5</text>
     </g>
   </g>
 </svg>
