@@ -1,10 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="title desc">
   <title id="title">AxonPHP CLI</title>
-  <desc id="desc">A PHP-inspired pipeline capsule holds an A. Its crossbar carries a signal to a terminal node.</desc>
-  <rect x="12" y="24" width="104" height="80" rx="40" fill="#4F5B93"/>
-  <g fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M36 88 L58 40 L80 88"/>
-    <path d="M46 68 H94"/>
+  <desc id="desc">An A carries its crossbar to a terminal node, in ink on a pale rounded square.</desc>
+  <!-- Stroke 12 on legs 42 units apart keeps the counter above the crossbar open. The ink spans x 29-101, one unit right of the tile centre, to balance the letter against its terminal. -->
+  <g>
+    <rect x="14" y="14" width="100" height="100" rx="26" fill="#E2E4EF"/>
+    <g fill="none" stroke="#1E2140" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M35 88 L56 38 L77 88"/>
+      <path d="M44 70 H91"/>
+    </g>
+    <circle cx="91" cy="70" r="10" fill="#1E2140"/>
   </g>
-  <circle cx="94" cy="68" r="6" fill="#FFFFFF"/>
 </svg>

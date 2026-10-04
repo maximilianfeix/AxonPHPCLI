@@ -6,7 +6,10 @@
  * @var list<array{name: string, type: string, packages: list<string>, command: string}> $tools
  * @var list<array{string, string, string}>                                              $summary  label, value, note
  * @var string                                                                           $repository
+ * @var AxonPHP\Cli\Project\Project                                                         $project
  */
+$command = 'vendor/bin/axonphp ci:init github --coverage';
+$row = 0;
 $copyIcon = '<svg class="idle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>'
     .'<svg class="done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
 ?>
@@ -140,7 +143,8 @@ code, pre { font-family: var(--mono); font-size: 0.875em; }
 .nav nav { margin-left: auto; }
 .nav ul { display: flex; gap: 2px; list-style: none; margin: 0; padding: 0; }
 .nav nav a { display: block; padding: 10px 12px; border-radius: var(--radius); color: #fff; text-decoration: none; font-size: 1rem; }
-.nav nav a:hover { background: rgb(255 255 255 / 0.16); }
+.nav nav a { transition: background-color 150ms ease-out; }
+.nav nav a:hover, .nav nav a[aria-current="true"] { background: rgb(255 255 255 / 0.16); }
 .nav :focus-visible { outline-color: #fff; }
 .actions { display: flex; gap: 4px; align-items: center; }
 .icon-btn { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius); border: 0; background: transparent; color: #fff; cursor: pointer; }
@@ -169,11 +173,12 @@ code, pre { font-family: var(--mono); font-size: 0.875em; }
 .lead { font-size: 1.1875rem; color: var(--php-100); margin-top: 20px; }
 .lead code { background: transparent; border-color: rgb(255 255 255 / 0.3); color: #fff; }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: var(--radius); font: 600 1rem var(--sans); text-decoration: none; border: 1px solid transparent; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: var(--radius); font: 600 1rem var(--sans); text-decoration: none; border: 1px solid transparent; transition: background-color 150ms ease-out, border-color 150ms ease-out; }
 .btn-solid { background: #fff; color: var(--php-ink); }
 .btn-solid:hover { background: var(--php-100); }
 .btn-line { color: #fff; border-color: rgb(255 255 255 / 0.5); }
 .btn-line:hover { background: rgb(255 255 255 / 0.1); }
+.facts { margin-top: 20px; color: var(--php-200); font-size: 0.9375rem; }
 .hero :focus-visible { outline-color: #fff; }
 @media (max-width: 960px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 36px; padding-block: 48px; } }
 
@@ -196,16 +201,38 @@ section.alt { background: var(--surface); }
 .head p { color: var(--muted); margin-top: 12px; }
 @media (max-width: 640px) { section { padding-block: 48px; } }
 
-/* How it works */
-.flow img { width: 100%; border-radius: var(--radius); }
-.steps { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; counter-reset: step; }
-.steps li { counter-increment: step; border-top: 2px solid var(--primary); padding-top: 14px; }
-.steps h3::before { content: counter(step) ". "; color: var(--link); }
-.steps p { color: var(--muted); margin-top: 6px; }
-@media (max-width: 760px) {
-  .steps { grid-template-columns: minmax(0, 1fr); gap: 20px; margin-top: 0; }
-  /* The diagram's labels would be too small to read here; the steps below say the same thing. */
-  .flow { display: none; }
+/* How it works: three stages joined by a wire that ends in a node, like the crossbar of the logo */
+.flow { display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr) 48px minmax(0, 1fr); grid-template-rows: auto 1fr auto; column-gap: 0; row-gap: 14px; }
+.stage { display: grid; grid-template-rows: subgrid; grid-row: 1 / span 3; min-width: 0; }
+.flow > :nth-child(1) { grid-column: 1; }
+.flow > :nth-child(2) { grid-column: 2; }
+.flow > :nth-child(3) { grid-column: 3; }
+.flow > :nth-child(4) { grid-column: 4; }
+.flow > :nth-child(5) { grid-column: 5; }
+.stage h3 { font-size: 0.9375rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.stage h3 span { color: var(--link); margin-right: 6px; font-family: var(--mono); }
+.stage > p { color: var(--muted); }
+.box { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); min-width: 0; }
+.box-h { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 16px; border-bottom: 1px solid var(--border); font-weight: 600; }
+.box-h code { background: none; border: 0; padding: 0; font-size: 0.9375rem; }
+.box pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-size: 0.8125rem; line-height: 1.6; }
+.box dl { margin: 0; padding: 14px 16px; }
+.box dt { font-size: 0.8125rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.box dd { margin: 0 0 12px; }
+.box dd:last-child { margin-bottom: 0; }
+.box ul { list-style: none; margin: 0; padding: 14px 16px; display: grid; gap: 12px; }
+.box li b { display: block; font-weight: 600; }
+.box li code { background: none; border: 0; padding: 0; color: var(--muted); white-space: normal; overflow-wrap: anywhere; }
+.wire { grid-row: 2; align-self: center; position: relative; height: 2px; margin: 0 8px 0 4px; background: var(--border); }
+.wire::after { content: ""; position: absolute; right: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+.wire i { position: absolute; left: 0; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); opacity: 0; }
+@media (max-width: 860px) {
+  .flow { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: 0; }
+  .flow > * { grid-column: 1 !important; }
+  .stage { grid-template-rows: none; grid-row: auto; row-gap: 12px; }
+  .wire { grid-row: auto; align-self: auto; width: 2px; height: 40px; margin: 6px 0 10px 27px; }
+  .wire::after { right: auto; left: -4px; top: auto; bottom: -5px; }
+  .wire i { left: -3px; top: 0; }
 }
 
 /* Features: a plain two-column list */
@@ -221,6 +248,8 @@ table { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 1re
 th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
 thead th { font-size: 0.875rem; font-weight: 600; color: var(--muted); background: var(--surface); }
 tbody tr:last-child > * { border-bottom: 0; }
+tbody tr { transition: background-color 120ms ease-out; }
+tbody tr:hover { background: var(--surface); }
 tbody th { font-weight: 600; white-space: nowrap; }
 td code { white-space: nowrap; }
 td.type { color: var(--muted); white-space: nowrap; }
@@ -235,14 +264,18 @@ td.type { color: var(--muted); white-space: nowrap; }
 .k { color: var(--code-key); }
 .s { color: var(--code-string); }
 .copy { position: absolute; top: 4px; right: 4px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: var(--radius); background: transparent; color: var(--muted); cursor: pointer; }
+.copy { transition: background-color 150ms ease-out, color 150ms ease-out; }
 .copy:hover { color: var(--text); background: var(--border); }
 .copy svg { width: 18px; height: 18px; }
 .copy .done, .copy.is-done .idle { display: none; }
 .copy.is-done .done { display: block; }
 
 /* Tabs */
-.tabs { display: flex; flex-wrap: wrap; gap: 0 4px; border-bottom: 1px solid var(--border); }
-.tabs button { min-height: 44px; padding: 0 16px; margin-bottom: -1px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--muted); font: 500 1rem var(--sans); cursor: pointer; }
+.tabs { position: relative; display: flex; flex-wrap: wrap; gap: 0 4px; border-bottom: 1px solid var(--border); }
+.ink { display: none; position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: var(--primary); }
+.js .ink { display: block; }
+.js .tabs button[aria-selected="true"] { border-bottom-color: transparent; }
+.tabs button { min-height: 44px; padding: 0 16px; margin-bottom: -1px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--muted); font: 500 1rem var(--sans); cursor: pointer; transition: color 150ms ease-out; }
 .tabs button:hover { color: var(--text); }
 .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--primary); font-weight: 600; }
 .panel { margin-top: 16px; }
@@ -277,6 +310,36 @@ footer { padding: 28px 0 40px; color: var(--muted); font-size: 1rem; }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
 footer ul { display: flex; flex-wrap: wrap; gap: 4px 20px; list-style: none; margin: 0; padding: 0; }
 
+/*
+ * Motion. Each animation runs once and ends within a few seconds, and none of it
+ * applies under prefers-reduced-motion. Content is only hidden for the entrance
+ * when scripting is on, so the page is complete without JavaScript.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* The command is typed, then the output prints line by line. */
+  .term .type { display: inline-block; vertical-align: bottom; overflow: hidden; white-space: pre; width: 0; animation: type 1.1s 0.5s forwards; }
+  .term .out { opacity: 0; animation: print 160ms ease-out forwards; animation-delay: calc(1.9s + var(--i) * 70ms); }
+  @keyframes type { to { width: var(--n); } }
+  @keyframes print { to { opacity: 1; } }
+
+  /* Sections ease in as they scroll into view. */
+  .js [data-reveal], .js [data-reveal-children] > * { opacity: 0; transform: translateY(14px); }
+  .js .in[data-reveal], .js [data-reveal-children] > .in { opacity: 1; transform: none; transition: opacity 480ms ease-out, transform 480ms cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0ms); }
+
+  /* A signal travels from composer.json to the pipeline file. */
+  .flow.in .wire i { animation: signal 0.7s ease-in-out 0.5s both; }
+  .flow.in .wire ~ .wire i { animation-delay: 1.2s; }
+  .flow.in .stage:last-child .box { animation: arrive 0.9s ease-out 1.9s; }
+  @keyframes signal { 0% { left: 0; opacity: 0; } 20%, 80% { opacity: 1; } 100% { left: calc(100% - 4px); opacity: 0; } }
+  @keyframes arrive { 0% { box-shadow: 0 0 0 0 var(--primary); border-color: var(--primary); } 100% { box-shadow: 0 0 0 6px transparent; } }
+
+  .ink { transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1), width 260ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .panel:not([hidden]) { animation: print 220ms ease-out; }
+}
+@media (prefers-reduced-motion: no-preference) and (max-width: 860px) {
+  .flow.in .wire i { animation-name: signal-down; }
+  @keyframes signal-down { 0% { top: 0; opacity: 0; } 20%, 80% { opacity: 1; } 100% { top: calc(100% - 4px); opacity: 0; } }
+}
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
 <script>
@@ -285,6 +348,7 @@ try {
   var stored = localStorage.getItem('axonphp-theme');
   if (stored === 'light' || stored === 'dark') document.documentElement.dataset.theme = stored;
 } catch (e) {}
+document.documentElement.classList.add('js');
 </script>
 </head>
 <body>
@@ -324,20 +388,20 @@ try {
           <a class="btn btn-solid" href="#install">Install</a>
           <a class="btn btn-line" href="<?= e($repository) ?>">View on GitHub</a>
         </div>
+        <p class="facts">MIT licensed · PHP 8.2 or newer · no config file</p>
       </div>
       <figure class="term">
         <div class="term-bar" aria-hidden="true"><i></i><i></i><i></i><span>acme-app</span></div>
-        <pre tabindex="0" aria-label="Example terminal session"><span class="p">$</span> vendor/bin/axonphp ci:init github --coverage
+        <pre tabindex="0" aria-label="Example terminal session"><span class="p">$</span> <span class="type" style="--n: <?= strlen($command) ?>ch; animation-timing-function: steps(<?= strlen($command) ?>)"><?= e($command) ?></span>
 
-<span class="t">AxonPHP CLI · GitHub Actions</span>
-<span class="t">============================</span>
+<span class="out" style="--i: <?= $row++ ?>"><span class="t">AxonPHP CLI · GitHub Actions</span></span>
+<span class="out" style="--i: <?= $row++ ?>"><span class="t">============================</span></span>
 
 <?php foreach ($summary as [$label, $value, $note]) { ?>
-  <span class="l"><?= e(str_pad($label, 17)) ?></span><?= e($value) ?><?= '' === $note ? '' : ' <span class="t">'.e($note).'</span>' ?>
-
+<span class="out" style="--i: <?= $row++ ?>">  <span class="l"><?= e(str_pad($label, 17)) ?></span><?= e($value) ?><?= '' === $note ? '' : ' <span class="t">'.e($note).'</span>' ?></span>
 <?php } ?>
 
-<span class="ok"> [OK] Created .github/workflows/ci.yml</span></pre>
+<span class="out ok" style="--i: <?= $row + 3 ?>"> [OK] Created .github/workflows/ci.yml</span></pre>
         <figcaption class="sr-only">The command lists what it detected in the project and reports that the workflow file was created.</figcaption>
       </figure>
     </div>
@@ -349,14 +413,57 @@ try {
         <h2>Your composer.json already says what CI should run</h2>
         <p>Most pipelines start as a copy of the one from the last project, fixed up by hand. AxonPHP derives it from what the project declares.</p>
       </div>
-      <div class="flow">
-        <img src="how-it-works.svg" width="960" height="360" loading="lazy" alt="Diagram: AxonPHP reads composer.json, derives the PHP version matrix, extensions and tools, and writes the pipeline file for GitHub Actions, GitLab CI or Bitbucket Pipelines.">
+      <div class="flow" data-reveal>
+        <div class="stage">
+          <h3><span>01</span> Read</h3>
+          <div class="box">
+            <p class="box-h"><code>composer.json</code></p>
+            <pre>{
+  <span class="k">"require"</span>: {
+    <span class="k">"php"</span>: <span class="s">"<?= e((string) $project->phpConstraint) ?>"</span>,
+<?php foreach ($project->extensions as $extension) { ?>
+    <span class="k">"ext-<?= e($extension) ?>"</span>: <span class="s">"*"</span>
+<?php } ?>
+  },
+  <span class="k">"require-dev"</span>: {
+    <span class="k">"phpunit/phpunit"</span>: <span class="s">"^12.0"</span>,
+    <span class="k">"phpstan/phpstan"</span>: <span class="s">"^2.0"</span>,
+    <span class="k">"friendsofphp/php-cs-fixer"</span>: <span class="s">"^3.0"</span>
+  }
+}</pre>
+          </div>
+          <p>The <code>php</code> constraint, every <code>ext-*</code> requirement and the packages in <code>require-dev</code>.</p>
+        </div>
+        <div class="wire" aria-hidden="true"><i></i></div>
+        <div class="stage">
+          <h3><span>02</span> Derive</h3>
+          <div class="box">
+            <p class="box-h"><img src="logo.svg" alt="" width="28" height="28">AxonPHP</p>
+            <dl>
+              <dt>PHP matrix</dt>
+              <dd><?= e(implode(', ', $project->phpVersions)) ?></dd>
+              <dt>Extensions</dt>
+              <dd><?= e(implode(', ', $project->extensions)) ?></dd>
+              <dt>Tools</dt>
+              <dd><?= e(implode(', ', array_map(static fn ($tool): string => $tool->name, $project->tools))) ?></dd>
+            </dl>
+          </div>
+          <p>Which PHP versions to test, which extensions to install and which tools to run.</p>
+        </div>
+        <div class="wire" aria-hidden="true"><i></i></div>
+        <div class="stage">
+          <h3><span>03</span> Write</h3>
+          <div class="box">
+            <p class="box-h">Pipeline file</p>
+            <ul>
+<?php foreach ($examples as $example) { ?>
+              <li><b><?= e($example['label']) ?></b><code><?= e($example['path']) ?></code></li>
+<?php } ?>
+            </ul>
+          </div>
+          <p>One file for your CI service. It is plain YAML and yours to edit.</p>
+        </div>
       </div>
-      <ol class="steps">
-        <li><h3>Read</h3><p>The <code>php</code> constraint, every <code>ext-*</code> requirement and the packages in <code>require-dev</code>.</p></li>
-        <li><h3>Derive</h3><p>Which PHP versions to test, which extensions to install and which tools to run.</p></li>
-        <li><h3>Write</h3><p>One pipeline file for your CI service. It is plain YAML and yours to edit.</p></li>
-      </ol>
     </div>
   </section>
 
@@ -365,7 +472,7 @@ try {
       <div class="head">
         <h2>What you get</h2>
       </div>
-      <dl class="features">
+      <dl class="features" data-reveal-children>
         <div><dt>A matrix that matches your constraint</dt><dd><code>"php": "^8.2"</code> becomes a test matrix of 8.2, 8.3, 8.4 and 8.5. Change the constraint and the matrix follows.</dd></div>
         <div><dt>The tools you already use</dt><dd>PHPUnit, Pest or Codeception. PHPStan, Psalm, Rector or Deptrac. PHP-CS-Fixer, Pint, ECS or PHP_CodeSniffer.</dd></div>
         <div><dt>A pipeline that stays in sync</dt><dd><code>ci:check</code> fails when the committed pipeline no longer matches the project, and prints the difference.</dd></div>
@@ -382,7 +489,7 @@ try {
         <h2>What AxonPHP looks for</h2>
         <p>A package in <code>require</code> or <code>require-dev</code> adds its command to the pipeline. Tests run on every PHP version in the matrix; static analysis and code style run once, on the newest.</p>
       </div>
-      <div class="table-wrap" tabindex="0" role="region" aria-label="Detected tools">
+      <div class="table-wrap" data-reveal tabindex="0" role="region" aria-label="Detected tools">
         <table>
           <thead>
             <tr><th scope="col">Tool</th><th scope="col">Type</th><th scope="col">Package</th><th scope="col">Command</th></tr>
@@ -409,6 +516,7 @@ try {
         <p>The real output for a project that requires PHP ^8.2 and <code>ext-intl</code> and uses PHPUnit, PHPStan and PHP-CS-Fixer, generated with <code>--coverage</code>.</p>
       </div>
       <div class="tabs" role="tablist" aria-label="CI provider">
+        <span class="ink" aria-hidden="true"></span>
 <?php foreach ($examples as $index => $example) { ?>
         <button type="button" role="tab" id="tab-<?= e($example['name']) ?>" aria-controls="panel-<?= e($example['name']) ?>" aria-selected="<?= 0 === $index ? 'true' : 'false' ?>"<?= 0 === $index ? '' : ' tabindex="-1"' ?>><?= e($example['label']) ?></button>
 <?php } ?>
@@ -427,7 +535,7 @@ try {
       <div class="head">
         <h2>Commands</h2>
       </div>
-      <div class="commands">
+      <div class="commands" data-reveal-children>
         <div>
           <h3><code>ci:init</code></h3>
           <p>Generates the pipeline. Leave the provider out and it asks which one you use.</p>
@@ -454,7 +562,7 @@ try {
   </section>
 
   <section id="config" class="alt">
-    <div class="wrap split">
+    <div class="wrap split" data-reveal-children>
       <div class="head">
         <h2>Configuration is optional</h2>
         <p>AxonPHP needs no configuration. When you want choices to stick, put them under <code>extra.axonphp</code> in <code>composer.json</code>. Command line options still win.</p>
@@ -483,10 +591,10 @@ try {
         <h2>Install</h2>
         <p>Requires PHP 8.2 or newer. Install it as a development dependency of the project you want a pipeline for.</p>
       </div>
-      <ol>
+      <ol data-reveal-children>
 <?php foreach ([
     ['Add the repository', 'composer config repositories.axonphp vcs '.$repository],
-    ['Require the package', 'composer require --dev maxim/axonphp-cli:dev-main'],
+    ['Require the package', 'composer require --dev maxim/axonphp-cli'],
     ['Generate your pipeline', 'vendor/bin/axonphp ci:init'],
 ] as [$title, $command]) { ?>
         <li>
@@ -498,7 +606,7 @@ try {
         </li>
 <?php } ?>
       </ol>
-      <p class="note">The package is not on Packagist yet, which is why the repository is added first. <code>dev-main</code> installs the current development version described on this page.</p>
+      <p class="note">The package is not on Packagist yet, which is why the repository is added first.</p>
     </div>
   </section>
 </main>
@@ -550,7 +658,53 @@ try {
     });
   });
 
+  // Entrances: reveal elements when they scroll into view, staggering siblings slightly.
+  var revealables = Array.prototype.slice.call(document.querySelectorAll('[data-reveal], [data-reveal-children] > *'));
+  if ('IntersectionObserver' in window) {
+    var revealer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('in');
+        revealer.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
+    revealables.forEach(function (element) {
+      var parent = element.parentElement;
+      if (parent && parent.hasAttribute('data-reveal-children')) {
+        element.style.setProperty('--d', Array.prototype.indexOf.call(parent.children, element) % 3 * 70 + 'ms');
+      }
+      revealer.observe(element);
+    });
+  } else {
+    revealables.forEach(function (element) { element.classList.add('in'); });
+  }
+
+  // Highlight the section being read in the navigation.
+  var links = Array.prototype.slice.call(document.querySelectorAll('.nav nav a'));
+  if ('IntersectionObserver' in window) {
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        links.forEach(function (link) {
+          if (link.getAttribute('href') === '#' + entry.target.id) link.setAttribute('aria-current', 'true');
+          else link.removeAttribute('aria-current');
+        });
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    links.forEach(function (link) {
+      var section = document.querySelector(link.getAttribute('href'));
+      if (section) spy.observe(section);
+    });
+  }
+
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var ink = document.querySelector('.ink');
+  function moveInk() {
+    var active = tabs.filter(function (tab) { return tab.getAttribute('aria-selected') === 'true'; })[0];
+    if (!ink || !active) return;
+    ink.style.width = active.offsetWidth + 'px';
+    ink.style.transform = 'translate(' + active.offsetLeft + 'px, ' + (active.offsetTop + active.offsetHeight - ink.parentElement.clientHeight) + 'px)';
+  }
   function select(tab, focus) {
     tabs.forEach(function (other) {
       var active = other === tab;
@@ -559,7 +713,11 @@ try {
       document.getElementById(other.getAttribute('aria-controls')).hidden = !active;
     });
     if (focus) tab.focus();
+    moveInk();
   }
+  moveInk();
+  window.addEventListener('resize', moveInk);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInk);
   tabs.forEach(function (tab, index) {
     tab.addEventListener('click', function () { select(tab, false); });
     tab.addEventListener('keydown', function (event) {

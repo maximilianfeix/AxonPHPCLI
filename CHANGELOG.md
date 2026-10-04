@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-04
+
 ### Added
 
 - `ci:check` command: compares the committed pipeline with what the project
@@ -24,7 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Detection of Rector, Deptrac, ECS and Codeception.
 - A website at https://maximilianfeix.github.io/AxonPHPCLI/, built from the
   same code that renders the pipelines (`composer site`).
-- A logo, a new banner, an animated terminal demo and a how-it-works diagram.
+- A logo, favicon, banner, how-it-works diagram and social preview image in
+  PHP's colours.
 
 ### Changed
 
@@ -36,6 +39,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - A branch name or PHP version ending in a newline was accepted.
+- `"php": "8.1.20"` and `">=8.1 <8.1.30"` resolved to the default matrix
+  instead of 8.1. A `php` constraint in `require-dev` now narrows the matrix,
+  and a constraint that matches no known version produces a warning.
+- GitLab: a push to a listed branch with an open merge request started two
+  pipelines.
+- GitLab and Bitbucket: the lowest-dependencies job installed from the lock
+  file before resolving the lowest versions, which could fail on the oldest
+  PHP version.
+- Composer's `bin-dir` and `vendor-dir` were ignored in the generated commands.
+- The pipeline file is written atomically, so a failed write cannot leave a
+  truncated file behind.
+- Empty `--php` and `--branch` values, branch names git would refuse and a JSON
+  array as `composer.json` are rejected.
 
 ## [0.2.0] - 2026-10-04
 
@@ -81,5 +97,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ci:init github` command that copies a static GitHub Actions workflow into
   the project.
 
-[Unreleased]: https://github.com/maximilianfeix/AxonPHPCLI/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/maximilianfeix/AxonPHPCLI/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.3.0
 [0.2.0]: https://github.com/maximilianfeix/AxonPHPCLI/releases/tag/v0.2.0

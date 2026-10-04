@@ -68,13 +68,8 @@ The package is not on Packagist yet, so point Composer at the repository first:
 
 ```bash
 composer config repositories.axonphp vcs https://github.com/maximilianfeix/AxonPHPCLI
-composer require --dev maxim/axonphp-cli:dev-main
+composer require --dev maxim/axonphp-cli
 ```
-
-`dev-main` is the current development version, which this README describes.
-The latest tagged release is listed under
-[releases](https://github.com/maximilianfeix/AxonPHPCLI/releases); leave
-`:dev-main` out to install it instead.
 
 ## Quick start
 

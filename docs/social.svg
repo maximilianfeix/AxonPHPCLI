@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="title desc">
+  <title id="title">AxonPHP CLI</title>
+  <desc id="desc">A CI pipeline that fits your PHP project. Run vendor/bin/axonphp ci:init github.</desc>
+  <rect width="1280" height="640" fill="#1E2140"/>
+  <g transform="translate(71.5 71.5) scale(1.75)">
+    <rect x="14" y="14" width="100" height="100" rx="26" fill="#E2E4EF"/>
+    <g fill="none" stroke="#1E2140" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M35 88 L56 38 L77 88"/>
+      <path d="M44 70 H91"/>
+    </g>
+    <circle cx="91" cy="70" r="10" fill="#1E2140"/>
+  </g>
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="96" y="384" font-size="80" font-weight="700" fill="#FFFFFF">AxonPHP CLI</text>
+    <text x="96" y="448" font-size="40" fill="#E2E4EF">A CI pipeline that fits your PHP project.</text>
+  </g>
+  <text x="96" y="528" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="28" fill="#E2E4EF">$ vendor/bin/axonphp ci:init github</text>
+</svg>
