@@ -47,6 +47,8 @@ final class GitLabCiProviderTest extends TestCase
         self::assertSame(
             [
                 ['if' => "\$CI_PIPELINE_SOURCE == 'merge_request_event'"],
+                // A push to a branch with an open merge request must not start a second pipeline.
+                ['if' => '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS', 'when' => 'never'],
                 ['if' => '$CI_COMMIT_TAG'],
                 ['if' => "\$CI_COMMIT_BRANCH == 'main'"],
                 ['if' => "\$CI_COMMIT_BRANCH == 'release/1.x'"],
@@ -107,7 +109,9 @@ final class GitLabCiProviderTest extends TestCase
             [
                 'stage' => 'test',
                 'image' => 'php:8.3-cli',
-                'script' => [Yaml::LOWEST_COMMAND, 'vendor/bin/phpunit'],
+                // No "composer install" here: the lock file may not be installable on the oldest PHP version.
+                'before_script' => [...Yaml::dockerSetup([]), Yaml::LOWEST_COMMAND],
+                'script' => ['vendor/bin/phpunit'],
             ],
             self::yaml($pipeline, 'tests:lowest'),
         );

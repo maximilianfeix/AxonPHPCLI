@@ -12,17 +12,21 @@ final class ToolCatalog
     /** The file every coverage command writes its Clover report to. */
     public const COVERAGE_REPORT = 'coverage.xml';
 
+    /** Where Composer puts the tools' executables unless the project configures another directory. */
+    public const DEFAULT_BIN_DIR = 'vendor/bin';
+
     /**
      * @param list<string> $packages names of the packages required by the project
+     * @param string       $binDir   the project's Composer "bin-dir", relative to its root
      *
      * @return list<Tool>
      */
-    public function detect(array $packages): array
+    public function detect(array $packages, string $binDir = self::DEFAULT_BIN_DIR): array
     {
         $tools = [];
         $hasTestRunner = false;
 
-        foreach (self::definitions() as [$candidates, $tool]) {
+        foreach (self::definitions($binDir) as [$candidates, $tool]) {
             if ([] === array_intersect($candidates, $packages)) {
                 continue;
             }
@@ -45,38 +49,39 @@ final class ToolCatalog
     /**
      * @return list<array{list<string>, Tool}> package names => the tool they provide, in order of precedence
      */
-    public static function definitions(): array
+    public static function definitions(string $binDir = self::DEFAULT_BIN_DIR): array
     {
         $clover = ' --coverage-clover='.self::COVERAGE_REPORT;
+        $bin = static fn (string $executable): string => $binDir.'/'.$executable;
 
         return [
             [
                 ['pestphp/pest'],
-                new Tool('Pest', ToolType::Tests, 'vendor/bin/pest', 'vendor/bin/pest --coverage'.$clover),
+                new Tool('Pest', ToolType::Tests, $bin('pest'), $bin('pest').' --coverage'.$clover),
             ],
-            [['codeception/codeception'], new Tool('Codeception', ToolType::Tests, 'vendor/bin/codecept run')],
+            [['codeception/codeception'], new Tool('Codeception', ToolType::Tests, $bin('codecept').' run')],
             [
                 ['phpunit/phpunit'],
-                new Tool('PHPUnit', ToolType::Tests, 'vendor/bin/phpunit', 'vendor/bin/phpunit --coverage-text'.$clover),
+                new Tool('PHPUnit', ToolType::Tests, $bin('phpunit'), $bin('phpunit').' --coverage-text'.$clover),
             ],
-            [['symfony/phpunit-bridge'], new Tool('PHPUnit Bridge', ToolType::Tests, 'vendor/bin/simple-phpunit')],
+            [['symfony/phpunit-bridge'], new Tool('PHPUnit Bridge', ToolType::Tests, $bin('simple-phpunit'))],
             [
                 ['phpstan/phpstan', 'larastan/larastan', 'nunomaduro/larastan'],
-                new Tool('PHPStan', ToolType::StaticAnalysis, 'vendor/bin/phpstan analyse --no-progress'),
+                new Tool('PHPStan', ToolType::StaticAnalysis, $bin('phpstan').' analyse --no-progress'),
             ],
-            [['vimeo/psalm'], new Tool('Psalm', ToolType::StaticAnalysis, 'vendor/bin/psalm --no-progress')],
-            [['rector/rector'], new Tool('Rector', ToolType::StaticAnalysis, 'vendor/bin/rector process --dry-run')],
+            [['vimeo/psalm'], new Tool('Psalm', ToolType::StaticAnalysis, $bin('psalm').' --no-progress')],
+            [['rector/rector'], new Tool('Rector', ToolType::StaticAnalysis, $bin('rector').' process --dry-run')],
             [
                 ['deptrac/deptrac', 'qossmic/deptrac-shim'],
-                new Tool('Deptrac', ToolType::StaticAnalysis, 'vendor/bin/deptrac analyse --no-progress'),
+                new Tool('Deptrac', ToolType::StaticAnalysis, $bin('deptrac').' analyse --no-progress'),
             ],
             [
                 ['friendsofphp/php-cs-fixer', 'php-cs-fixer/shim'],
-                new Tool('PHP-CS-Fixer', ToolType::CodeStyle, 'vendor/bin/php-cs-fixer check --diff'),
+                new Tool('PHP-CS-Fixer', ToolType::CodeStyle, $bin('php-cs-fixer').' check --diff'),
             ],
-            [['laravel/pint'], new Tool('Pint', ToolType::CodeStyle, 'vendor/bin/pint --test')],
-            [['symplify/easy-coding-standard'], new Tool('ECS', ToolType::CodeStyle, 'vendor/bin/ecs check')],
-            [['squizlabs/php_codesniffer'], new Tool('PHP_CodeSniffer', ToolType::CodeStyle, 'vendor/bin/phpcs')],
+            [['laravel/pint'], new Tool('Pint', ToolType::CodeStyle, $bin('pint').' --test')],
+            [['symplify/easy-coding-standard'], new Tool('ECS', ToolType::CodeStyle, $bin('ecs').' check')],
+            [['squizlabs/php_codesniffer'], new Tool('PHP_CodeSniffer', ToolType::CodeStyle, $bin('phpcs'))],
         ];
     }
 }

@@ -15,6 +15,7 @@ final readonly class Project
      * @param list<Tool>   $tools
      * @param ?string      $phpConstraint the raw "php" constraint from composer.json, if any
      * @param ?string      $name          the Composer package name, if any
+     * @param bool         $phpResolved   false when the constraint matched no known PHP version and the defaults are used
      */
     public function __construct(
         public array $phpVersions,
@@ -24,6 +25,7 @@ final readonly class Project
         public ?string $phpConstraint = null,
         public ?string $name = null,
         public ProjectSettings $settings = new ProjectSettings(),
+        public bool $phpResolved = true,
     ) {}
 
     /**

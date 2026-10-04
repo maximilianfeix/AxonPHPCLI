@@ -616,6 +616,8 @@ try {
 <span class="k">workflow</span>:
   <span class="k">rules</span>:
     - <span class="k">if</span>: $CI_PIPELINE_SOURCE == <span class="s">&#039;merge_request_event&#039;</span>
+    - <span class="k">if</span>: $CI_COMMIT_BRANCH &amp;&amp; $CI_OPEN_MERGE_REQUESTS
+      <span class="k">when</span>: never
     - <span class="k">if</span>: $CI_COMMIT_TAG
     - <span class="k">if</span>: $CI_COMMIT_BRANCH == <span class="s">&#039;main&#039;</span>
 

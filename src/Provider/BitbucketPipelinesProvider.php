@@ -64,7 +64,9 @@ final class BitbucketPipelinesProvider implements Provider
                 'tests-lowest',
                 sprintf('Tests (PHP %s, lowest dependencies)', $oldest),
                 $oldest,
-                [Yaml::LOWEST_COMMAND, ...Yaml::testCommands($project)],
+                Yaml::testCommands($project),
+                // Installing from the lock file first could fail on this PHP version.
+                Yaml::LOWEST_COMMAND,
             );
         }
 
@@ -103,9 +105,16 @@ final class BitbucketPipelinesProvider implements Provider
 
     /**
      * @param list<string> $script
+     * @param string       $install the command that installs the dependencies
      */
-    private function step(Project $project, string $anchor, string $name, string $phpVersion, array $script): string
-    {
+    private function step(
+        Project $project,
+        string $anchor,
+        string $name,
+        string $phpVersion,
+        array $script,
+        string $install = Yaml::INSTALL_COMMAND,
+    ): string {
         $lines = [
             sprintf('    - step: &%s', $anchor),
             '        name: '.$name,
@@ -117,7 +126,7 @@ final class BitbucketPipelinesProvider implements Provider
             $script = [
                 'export COMPOSER_ALLOW_SUPERUSER=1',
                 ...Yaml::dockerSetup($project->extensions),
-                Yaml::INSTALL_COMMAND,
+                $install,
                 ...$script,
             ];
         }

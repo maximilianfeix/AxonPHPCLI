@@ -21,7 +21,7 @@ final readonly class ProjectInspector
         $file = $directory.\DIRECTORY_SEPARATOR.'composer.json';
 
         if (!is_file($file)) {
-            return new Project($this->versions->resolve(null), usesComposer: false);
+            return new Project(PhpVersionResolver::DEFAULT, usesComposer: false);
         }
 
         $manifest = $this->read($file);
@@ -31,14 +31,18 @@ final readonly class ProjectInspector
         $constraint = $require['php'] ?? null;
         $name = $manifest['name'] ?? null;
 
+        // Pipelines install the dev dependencies too, so a "php" entry in require-dev narrows the matrix as well.
+        $versions = $this->versions->resolve($constraint, $requireDev['php'] ?? null);
+
         return new Project(
-            $this->versions->resolve($constraint),
+            $versions ?? PhpVersionResolver::DEFAULT,
             $this->extensions($packages),
-            $this->catalog->detect($packages),
+            $this->catalog->detect($packages, $this->binDir($manifest)),
             true,
             $constraint,
             is_string($name) ? $name : null,
             $this->settings($manifest),
+            null !== $versions,
         );
     }
 
@@ -54,12 +58,14 @@ final readonly class ProjectInspector
         }
 
         try {
+            // Decoding to arrays alone cannot tell "{}" from "[]", so the root type is checked on the object form.
+            $isObject = json_decode($contents, false, 512, \JSON_THROW_ON_ERROR) instanceof \stdClass;
             $manifest = json_decode($contents, true, 512, \JSON_THROW_ON_ERROR);
         } catch (\JsonException $exception) {
             throw new ProjectException(sprintf('"%s" is not valid JSON: %s.', $file, $exception->getMessage()), 0, $exception);
         }
 
-        if (!is_array($manifest)) {
+        if (!$isObject || !is_array($manifest)) {
             throw new ProjectException(sprintf('"%s" must contain a JSON object.', $file));
         }
 
@@ -111,6 +117,31 @@ final readonly class ProjectInspector
     }
 
     /**
+     * The directory Composer links the tools' executables into, honouring "config.bin-dir" and "config.vendor-dir".
+     *
+     * @param array<mixed> $manifest
+     */
+    private function binDir(array $manifest): string
+    {
+        $config = $manifest['config'] ?? null;
+        $config = is_array($config) ? $config : [];
+
+        $vendorDir = $config['vendor-dir'] ?? 'vendor';
+        $vendorDir = is_string($vendorDir) ? $vendorDir : 'vendor';
+
+        $binDir = $config['bin-dir'] ?? null;
+        $binDir = is_string($binDir) ? str_replace('{$vendor-dir}', $vendorDir, $binDir) : $vendorDir.'/bin';
+        $binDir = rtrim(str_replace('\\', '/', $binDir), '/');
+
+        // The directory ends up in shell commands inside YAML, so only plain relative paths are accepted.
+        if (1 !== preg_match('~^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$~D', $binDir) || str_contains($binDir, '..')) {
+            throw new ProjectException(sprintf('Cannot use the Composer bin-dir "%s". Use a relative path without special characters.', $binDir));
+        }
+
+        return $binDir;
+    }
+
+    /**
      * Reads "extra.axonphp". Unlike the rest of composer.json this section is ours,
      * so a wrong type is reported instead of being silently ignored.
      *
@@ -157,7 +188,7 @@ final readonly class ProjectInspector
             return null;
         }
 
-        if (!is_array($value) || [] === $value) {
+        if (!is_array($value) || [] === $value || !array_is_list($value)) {
             throw new ProjectException(sprintf('"extra.axonphp.%s" in composer.json must be a non-empty list of strings.', $key));
         }
 

@@ -146,6 +146,78 @@ final class ProjectInspectorTest extends TestCase
         self::assertSame('8.10', (new Project(['8.10', '8.4', '8.9']))->latestPhpVersion());
     }
 
+    public function testRequireDevPhpConstraintNarrowsTheMatrix(): void
+    {
+        $project = (new ProjectInspector())->inspect($this->createProject([
+            'require' => ['php' => '^8.2'],
+            'require-dev' => ['php' => '^8.4'],
+        ]));
+
+        self::assertSame('^8.2', $project->phpConstraint);
+        self::assertSame(['8.4', '8.5'], $project->phpVersions);
+        self::assertTrue($project->phpResolved);
+    }
+
+    public function testFlagsConstraintsThatMatchNoKnownVersion(): void
+    {
+        $project = (new ProjectInspector())->inspect($this->createProject(['require' => ['php' => '^5.6']]));
+
+        self::assertFalse($project->phpResolved);
+        self::assertSame(PhpVersionResolver::DEFAULT, $project->phpVersions);
+    }
+
+    public function testHonoursTheComposerBinDir(): void
+    {
+        $inspector = new ProjectInspector();
+        $requireDev = ['require-dev' => ['phpunit/phpunit' => '^12.0']];
+
+        $custom = $inspector->inspect($this->createProject($requireDev + ['config' => ['bin-dir' => 'tools/']]));
+        self::assertSame('tools/phpunit', $custom->tools[0]->command);
+        self::assertSame('tools/phpunit --coverage-text --coverage-clover=coverage.xml', $custom->tools[0]->coverageCommand);
+
+        $vendor = $inspector->inspect($this->createProject($requireDev + ['config' => ['vendor-dir' => 'lib']]));
+        self::assertSame('lib/bin/phpunit', $vendor->tools[0]->command);
+
+        $placeholder = $inspector->inspect($this->createProject(
+            $requireDev + ['config' => ['vendor-dir' => 'lib', 'bin-dir' => '{$vendor-dir}/exec']],
+        ));
+        self::assertSame('lib/exec/phpunit', $placeholder->tools[0]->command);
+    }
+
+    public function testRejectsBinDirsThatAreNotPlainRelativePaths(): void
+    {
+        $inspector = new ProjectInspector();
+
+        foreach (['../bin', '/usr/local/bin', 'bin; rm -rf .', 'my bin'] as $binDir) {
+            try {
+                $inspector->inspect($this->createProject(['config' => ['bin-dir' => $binDir]]));
+                self::fail(sprintf('The bin-dir "%s" was accepted.', $binDir));
+            } catch (ProjectException $exception) {
+                self::assertStringContainsString('Cannot use the Composer bin-dir', $exception->getMessage());
+            }
+        }
+    }
+
+    public function testRejectsAJsonArrayAsManifest(): void
+    {
+        $directory = $this->createProject('[]');
+
+        $this->expectException(ProjectException::class);
+        $this->expectExceptionMessage('must contain a JSON object');
+
+        (new ProjectInspector())->inspect($directory);
+    }
+
+    public function testRejectsSettingsListsThatAreObjects(): void
+    {
+        $directory = $this->createProject(['extra' => ['axonphp' => ['branches' => ['a' => 'main']]]]);
+
+        $this->expectException(ProjectException::class);
+        $this->expectExceptionMessage('must be a non-empty list of strings');
+
+        (new ProjectInspector())->inspect($directory);
+    }
+
     /**
      * @param list<Tool> $tools
      *

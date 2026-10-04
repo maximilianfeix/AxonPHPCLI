@@ -94,7 +94,11 @@ final class BitbucketPipelinesProviderTest extends TestCase
             array_column(array_column($steps, 'step'), 'name'),
         );
         self::assertSame('composer audit', self::yaml($pipeline, 'definitions', 'steps', 0, 'step', 'script', 5));
-        self::assertSame(Yaml::LOWEST_COMMAND, self::yaml($pipeline, 'definitions', 'steps', 3, 'step', 'script', 5));
+        // The lowest step resolves its own dependencies instead of installing from the lock file first.
+        self::assertSame(
+            ['export COMPOSER_ALLOW_SUPERUSER=1', ...Yaml::dockerSetup([]), Yaml::LOWEST_COMMAND, 'vendor/bin/phpunit'],
+            self::yaml($pipeline, 'definitions', 'steps', 3, 'step', 'script'),
+        );
         self::assertSame(
             ['install-php-extensions pcov', 'vendor/bin/phpunit --coverage-clover=coverage.xml'],
             array_slice((array) self::yaml($pipeline, 'definitions', 'steps', 4, 'step', 'script'), 5),

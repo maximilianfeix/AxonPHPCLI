@@ -74,8 +74,8 @@ final class GitLabCiProvider implements Provider
     }
 
     /**
-     * Runs merge request pipelines plus branch pipelines for the given branches,
-     * so a push to a branch with an open merge request does not run twice.
+     * Runs merge request pipelines plus branch pipelines for the given branches.
+     * A push to a branch that has an open merge request only runs the merge request pipeline.
      *
      * @param list<string> $branches
      */
@@ -85,6 +85,8 @@ final class GitLabCiProvider implements Provider
             'workflow:',
             '  rules:',
             "    - if: \$CI_PIPELINE_SOURCE == 'merge_request_event'",
+            '    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS',
+            '      when: never',
             '    - if: $CI_COMMIT_TAG',
         ];
 
@@ -170,8 +172,11 @@ final class GitLabCiProvider implements Provider
             'tests:lowest:',
             '  stage: test',
             sprintf('  image: php:%s-cli', $project->oldestPhpVersion()),
+            // Replaces the default before_script: installing from the lock file first could fail on this PHP version.
+            '  before_script:',
+            ...$this->items([...Yaml::dockerSetup($project->extensions), Yaml::LOWEST_COMMAND]),
             '  script:',
-            ...$this->items([Yaml::LOWEST_COMMAND, ...Yaml::testCommands($project)]),
+            ...$this->items(Yaml::testCommands($project)),
         ]);
     }
 

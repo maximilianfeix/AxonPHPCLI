@@ -116,6 +116,7 @@ abstract class PipelineCommand extends Command
         $settings = $project->settings;
 
         $phpSource = match (true) {
+            !$project->phpResolved => sprintf('default, "php": "%s" matches no known version', (string) $project->phpConstraint),
             null !== $project->phpConstraint => sprintf('from "php": "%s"', $project->phpConstraint),
             default => 'default',
         };
@@ -178,7 +179,7 @@ abstract class PipelineCommand extends Command
     {
         foreach ($branches as $branch) {
             // Branch names end up inside YAML and shell-like expressions, so keep them to a safe alphabet.
-            if (1 !== preg_match('~^[A-Za-z0-9][A-Za-z0-9._/-]*$~D', $branch)) {
+            if (1 !== preg_match('~^[A-Za-z0-9][A-Za-z0-9._/-]*$~D', $branch) || !$this->isGitBranchName($branch)) {
                 throw new InvalidInputException(sprintf('Invalid branch name "%s".', $branch));
             }
         }
@@ -187,16 +188,38 @@ abstract class PipelineCommand extends Command
     }
 
     /**
-     * @return list<string> the unique, non-empty values of an array option
+     * The rules of "git check-ref-format" that the safe alphabet does not already cover.
+     */
+    private function isGitBranchName(string $branch): bool
+    {
+        if (str_contains($branch, '..') || str_contains($branch, '//') || str_ends_with($branch, '/') || str_ends_with($branch, '.')) {
+            return false;
+        }
+
+        foreach (explode('/', $branch) as $component) {
+            if (str_starts_with($component, '.') || str_ends_with($component, '.lock')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return list<string> the unique values of an array option
+     *
+     * @throws InvalidInputException when the option was passed without a value, e.g. from an empty shell variable
      */
     private function values(InputInterface $input, string $option): array
     {
         $values = [];
 
         foreach ((array) $input->getOption($option) as $value) {
-            if (is_string($value) && '' !== trim($value)) {
-                $values[] = trim($value);
+            if (!is_string($value) || '' === trim($value)) {
+                throw new InvalidInputException(sprintf('The --%s option needs a value.', $option));
             }
+
+            $values[] = trim($value);
         }
 
         return array_values(array_unique($values));

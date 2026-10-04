@@ -13,16 +13,16 @@ use PHPUnit\Framework\TestCase;
 final class PhpVersionResolverTest extends TestCase
 {
     /**
-     * @param list<string> $expected
+     * @param null|list<string> $expected
      */
     #[DataProvider('constraints')]
-    public function testResolvesConstraintToMinorVersions(?string $constraint, array $expected): void
+    public function testResolvesConstraintToMinorVersions(?string $constraint, ?array $expected): void
     {
         self::assertSame($expected, (new PhpVersionResolver())->resolve($constraint));
     }
 
     /**
-     * @return iterable<string, array{?string, list<string>}>
+     * @return iterable<string, array{?string, null|list<string>}>
      */
     public static function constraints(): iterable
     {
@@ -42,8 +42,24 @@ final class PhpVersionResolverTest extends TestCase
 
         yield 'blank' => ['  ', PhpVersionResolver::DEFAULT];
 
-        yield 'unparsable' => ['not a constraint', PhpVersionResolver::DEFAULT];
+        yield 'exact version' => ['8.1.20', ['8.1']];
 
-        yield 'no known version matches' => ['^5.6', PhpVersionResolver::DEFAULT];
+        yield 'range inside one minor' => ['>=8.1 <8.1.30', ['8.1']];
+
+        yield 'upper bound excludes the next minor' => ['>=8.2 <8.4', ['8.2', '8.3']];
+
+        yield 'unparsable' => ['not a constraint', null];
+
+        yield 'no known version matches' => ['^5.6', null];
+    }
+
+    public function testEveryConstraintHasToBeSatisfied(): void
+    {
+        $resolver = new PhpVersionResolver();
+
+        self::assertSame(['8.4', '8.5'], $resolver->resolve('^8.2', '^8.4'));
+        self::assertSame(['8.2', '8.3', '8.4', '8.5'], $resolver->resolve('^8.2', null));
+        self::assertSame(PhpVersionResolver::DEFAULT, $resolver->resolve(null, '  '));
+        self::assertNull($resolver->resolve('^8.4', '<8.3'));
     }
 }

@@ -6,6 +6,7 @@ namespace AxonPHP\Cli\Command;
 
 use AxonPHP\Cli\Exception\InvalidInputException;
 use AxonPHP\Cli\Exception\ProjectException;
+use AxonPHP\Cli\Project\PhpVersionResolver;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolType;
 use AxonPHP\Cli\Provider\Provider;
@@ -168,7 +169,16 @@ final class CiInitCommand extends PipelineCommand
 
         if (!$project->usesComposer) {
             $ui->warning('No composer.json found. Generating a minimal pipeline that only lints PHP files.');
-        } elseif ($options->coverage && null === $project->coverageTool()) {
+        } elseif (!$project->phpResolved) {
+            $ui->warning(sprintf(
+                'The "php" constraint "%s" allows none of the PHP versions AxonPHP knows (%s to %s). Testing the default versions instead; pass --php to choose them yourself.',
+                (string) $project->phpConstraint,
+                PhpVersionResolver::KNOWN[0],
+                PhpVersionResolver::KNOWN[count(PhpVersionResolver::KNOWN) - 1],
+            ));
+        }
+
+        if ($project->usesComposer && $options->coverage && null === $project->coverageTool()) {
             $ui->warning('Coverage was requested, but the project has no test runner that can measure it (PHPUnit or Pest).');
         }
 
@@ -183,7 +193,12 @@ final class CiInitCommand extends PipelineCommand
             throw new ProjectException(sprintf('Could not create the directory "%s".', $directory));
         }
 
-        if (false === @file_put_contents($target, $contents)) {
+        // Write next to the target and swap it in, so a failed write never leaves a truncated pipeline behind.
+        $temporary = $target.'.'.bin2hex(random_bytes(4)).'.tmp';
+
+        if (strlen($contents) !== @file_put_contents($temporary, $contents) || !@rename($temporary, $target)) {
+            @unlink($temporary);
+
             throw new ProjectException(sprintf('Could not write "%s".', $target));
         }
     }

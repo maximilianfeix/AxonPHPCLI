@@ -169,7 +169,11 @@ final class CiInitCommandTest extends TestCase
         $cases = [
             'Unknown provider "jenkins"' => ['provider' => 'jenkins', '--working-dir' => $directory],
             'Invalid PHP version "8"' => ['provider' => 'github', '--working-dir' => $directory, '--php' => ['8']],
-            'Invalid branch name' => ['provider' => 'github', '--working-dir' => $directory, '--branch' => ["main'\n"]],
+            'Invalid branch name "main\'' => ['provider' => 'github', '--working-dir' => $directory, '--branch' => ["main'\n"]],
+            'Invalid branch name "release..bad"' => ['provider' => 'github', '--working-dir' => $directory, '--branch' => ['release..bad']],
+            'Invalid branch name "wip.lock"' => ['provider' => 'github', '--working-dir' => $directory, '--branch' => ['wip.lock']],
+            'The --branch option needs a value.' => ['provider' => 'github', '--working-dir' => $directory, '--branch' => ['']],
+            'The --php option needs a value.' => ['provider' => 'github', '--working-dir' => $directory, '--php' => [' ']],
             'does not exist' => ['provider' => 'github', '--working-dir' => $directory.'/missing'],
         ];
 
@@ -305,6 +309,43 @@ final class CiInitCommandTest extends TestCase
             $tester->execute(['provider' => 'github', '--working-dir' => $directory], ['interactive' => false]),
         );
         self::assertStringContainsString('Invalid branch name', $tester->getDisplay());
+    }
+
+    public function testWarnsWhenThePhpConstraintMatchesNoKnownVersion(): void
+    {
+        $directory = $this->createProject(['require' => ['php' => '^5.6']]);
+        $tester = $this->tester();
+
+        $exitCode = $tester->execute(['provider' => 'github', '--working-dir' => $directory], ['interactive' => false]);
+
+        $display = (string) preg_replace('/\s+/', ' ', $tester->getDisplay());
+        self::assertSame(Command::SUCCESS, $exitCode);
+        self::assertStringContainsString('allows none of the PHP versions AxonPHP knows (7.4 to 8.5)', $display);
+        self::assertStringContainsString('default, "php": "^5.6" matches no known version', $display);
+    }
+
+    public function testAnExplicitPhpVersionSilencesTheConstraintWarning(): void
+    {
+        $directory = $this->createProject(['require' => ['php' => '^5.6']]);
+        $tester = $this->tester();
+
+        $tester->execute(
+            ['provider' => 'github', '--working-dir' => $directory, '--php' => ['8.4']],
+            ['interactive' => false],
+        );
+
+        self::assertStringNotContainsString('allows none of the PHP versions', $tester->getDisplay());
+        self::assertStringContainsString('8.4 (from --php)', $tester->getDisplay());
+    }
+
+    public function testLeavesNoTemporaryFileBehind(): void
+    {
+        $directory = $this->createProject(self::MANIFEST);
+
+        $this->tester()->execute(['provider' => 'gitlab', '--working-dir' => $directory], ['interactive' => false]);
+
+        self::assertSame([], glob($directory.'/*.tmp'));
+        self::assertSame([], glob($directory.'/.*.tmp'));
     }
 
     private function tester(): CommandTester
