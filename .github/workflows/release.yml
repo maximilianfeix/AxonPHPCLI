@@ -1,0 +1,56 @@
+# Builds axonphp.phar and attaches it to a release when the release is published.
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  phar:
+    name: Build and attach the PHAR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          ini-values: phar.readonly=0
+          coverage: none
+
+      - name: Check that the tag matches the application version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: grep -q "VERSION = '${TAG#v}'" src/Application.php
+
+      - name: Install dependencies without development packages
+        run: composer install --no-dev --prefer-dist --no-progress --classmap-authoritative
+
+      - name: Build the PHAR
+        run: php tools/build-phar.php
+
+      - name: Smoke test
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          php build/axonphp.phar --version | grep -F "${TAG#v}"
+          php build/axonphp.phar ci:init github --dry-run > /dev/null
+          php build/axonphp.phar ci:check
+
+      - name: Attach the PHAR and its checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          cd build
+          sha256sum axonphp.phar > axonphp.phar.sha256
+          gh release upload "$TAG" axonphp.phar axonphp.phar.sha256 --clobber

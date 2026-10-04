@@ -6,5 +6,6 @@ parameters:
     paths:
         - bin/axonphp
         - site/build.php
+        - tools/build-phar.php
         - src
         - tests
