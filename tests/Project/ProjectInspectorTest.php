@@ -76,6 +76,24 @@ final class ProjectInspectorTest extends TestCase
         self::assertNull($project->coverageTool());
     }
 
+    public function testParaTestReplacesPhpUnitWhileBehatAndPhpSpecRunNextToIt(): void
+    {
+        $project = (new ProjectInspector())->inspect($this->createProject([
+            'require-dev' => [
+                'behat/behat' => '^3.0',
+                'phpspec/phpspec' => '^8.0',
+                'phpunit/phpunit' => '^12.0',
+                'brianium/paratest' => '^7.0',
+            ],
+        ]));
+
+        self::assertSame(['ParaTest', 'PHPSpec', 'Behat'], self::names($project->tools(ToolType::Tests)));
+        self::assertSame(
+            'vendor/bin/paratest --coverage-text --coverage-clover=coverage.xml',
+            $project->coverageTool()?->coverageCommand,
+        );
+    }
+
     public function testFindsTheToolThatMeasuresCoverage(): void
     {
         $project = (new ProjectInspector())->inspect($this->createProject([

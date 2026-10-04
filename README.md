@@ -73,6 +73,17 @@ composer config repositories.axonphp vcs https://github.com/maximilianfeix/AxonP
 composer require --dev maxim/axonphp-cli
 ```
 
+### As a PHAR
+
+Every [release](https://github.com/maximilianfeix/AxonPHPCLI/releases) has a
+single-file build attached, with a SHA-256 checksum next to it. It needs no
+Composer and does not touch your project's dependencies:
+
+```bash
+curl -sSLfO https://github.com/maximilianfeix/AxonPHPCLI/releases/latest/download/axonphp.phar
+php axonphp.phar ci:init github
+```
+
 ## Quick start
 
 From the root of your project:
@@ -263,8 +274,11 @@ Command line options win over `extra.axonphp`, which wins over the defaults.
 | `ext-*` packages                                 | Extensions installed before your dependencies |
 | `pestphp/pest`                                   | `vendor/bin/pest`                             |
 | `codeception/codeception`                        | `vendor/bin/codecept run`                     |
+| `brianium/paratest`                              | `vendor/bin/paratest`                         |
 | `phpunit/phpunit`                                | `vendor/bin/phpunit`                          |
 | `symfony/phpunit-bridge`                         | `vendor/bin/simple-phpunit`                   |
+| `phpspec/phpspec`                                | `vendor/bin/phpspec run --no-interaction`     |
+| `behat/behat`                                    | `vendor/bin/behat --no-interaction`           |
 | `phpstan/phpstan`, `larastan/larastan`, `nunomaduro/larastan` | `vendor/bin/phpstan analyse --no-progress` |
 | `vimeo/psalm`                                    | `vendor/bin/psalm --no-progress`              |
 | `rector/rector`                                  | `vendor/bin/rector process --dry-run`         |
@@ -287,12 +301,13 @@ dependency checks run once, on the newest version, in a separate job.
 A few details worth knowing:
 
 - Without a `php` constraint, the matrix defaults to 8.2, 8.3, 8.4 and 8.5.
-- Only one test runner is used. Pest and Codeception win over PHPUnit, since
-  both ship with it.
+- Only one runner of the PHPUnit family is used. Pest, Codeception and ParaTest
+  win over PHPUnit, since they ship with it. PHPSpec and Behat have suites of
+  their own and run in addition.
 - With no test tool installed, the pipeline lints every PHP file with `php -l`
   instead, so it is still useful on day one.
 - With no `composer.json` at all, you get that lint-only pipeline and a warning.
-- Coverage needs PHPUnit or Pest. The report is written to `coverage.xml` and
+- Coverage needs PHPUnit, ParaTest or Pest. The report is written to `coverage.xml` and
   kept as a build artifact.
 - A minimum coverage is enforced by Pest's own `--min` option. For PHPUnit the
   job reads the line coverage from `coverage.xml` and fails below the minimum.
@@ -329,6 +344,7 @@ src/
 ├── Project/    reads composer.json: PHP versions, extensions, tools, settings
 └── Provider/   translates that plan into the YAML of one CI service
 site/           builds the website in docs/ from the same code
+tools/          builds the PHAR attached to each release
 ```
 
 Adding a tool is one entry in `ToolCatalog`. Adding a CI service is one class
