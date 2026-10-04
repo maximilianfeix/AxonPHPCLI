@@ -6,15 +6,11 @@ namespace AxonPHP\Cli\Command;
 
 use AxonPHP\Cli\Exception\InvalidInputException;
 use AxonPHP\Cli\Exception\ProjectException;
-use AxonPHP\Cli\Project\Project;
-use AxonPHP\Cli\Project\ProjectInspector;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolType;
 use AxonPHP\Cli\Provider\Provider;
-use AxonPHP\Cli\Provider\ProviderRegistry;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -24,46 +20,14 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'ci:init',
     description: 'Generate a CI pipeline tailored to your PHP project',
 )]
-final class CiInitCommand extends Command
+final class CiInitCommand extends PipelineCommand
 {
-    public function __construct(
-        private readonly ProviderRegistry $providers,
-        private readonly ProjectInspector $inspector,
-    ) {
-        parent::__construct();
-    }
-
     protected function configure(): void
     {
-        $providers = $this->providers->names();
-
         $this
-            ->addArgument(
-                'provider',
-                InputArgument::OPTIONAL,
-                sprintf('CI provider to generate the pipeline for (%s)', implode(', ', $providers)),
-                null,
-                $providers,
-            )
-            ->addOption(
-                'php',
-                'p',
-                InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
-                'PHP version to test against, repeatable (default: derived from composer.json)',
-            )
-            ->addOption(
-                'branch',
-                'b',
-                InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
-                'Branch whose pushes trigger the pipeline, repeatable',
-                ['main'],
-            )
-            ->addOption(
-                'working-dir',
-                'd',
-                InputOption::VALUE_REQUIRED,
-                'Project directory (default: current directory)',
-            )
+            ->addProviderArgument('CI provider to generate the pipeline for')
+            ->addPipelineOptions()
+            ->addWorkingDirOption()
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Overwrite an existing pipeline file')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Print the pipeline instead of writing it')
             ->setHelp(
@@ -81,6 +45,14 @@ final class CiInitCommand extends Command
                     Pin the PHP versions and trigger branches yourself:
 
                       <info>%command.full_name% github --php 8.3 --php 8.4 --branch main --branch develop</info>
+
+                    Add a coverage job, a lowest-dependencies job and a security audit:
+
+                      <info>%command.full_name% github --coverage --lowest --audit</info>
+
+                    To make such choices permanent, store them in <comment>composer.json</comment>:
+
+                      <comment>"extra": { "axonphp": { "branches": ["main", "develop"], "coverage": true } }</comment>
                     HELP
             )
         ;
@@ -107,14 +79,7 @@ final class CiInitCommand extends Command
 
         try {
             $provider = $this->provider($input);
-            $directory = $this->directory($input);
-            $branches = $this->branches($input);
-            $project = $this->inspector->inspect($directory);
-            $phpVersions = $this->phpVersions($input);
-
-            if ([] !== $phpVersions) {
-                $project = $project->withPhpVersions($phpVersions);
-            }
+            $context = $this->context($input);
         } catch (InvalidInputException $exception) {
             $ui->error($exception->getMessage());
 
@@ -125,9 +90,9 @@ final class CiInitCommand extends Command
             return Command::FAILURE;
         }
 
-        $this->summarize($ui, $provider, $project, $directory, [] !== $phpVersions);
+        $this->summarize($ui, $provider, $context);
 
-        $pipeline = $provider->render($project, $branches);
+        $pipeline = $provider->render($context->project, $context->options);
 
         if ($dryRun) {
             $output->write($pipeline, false, OutputInterface::OUTPUT_RAW);
@@ -136,7 +101,7 @@ final class CiInitCommand extends Command
             return Command::SUCCESS;
         }
 
-        $target = $directory.\DIRECTORY_SEPARATOR.str_replace('/', \DIRECTORY_SEPARATOR, $provider->path());
+        $target = $this->pipelineFile($context->directory, $provider);
 
         if (is_file($target) && true !== $input->getOption('force')) {
             $question = sprintf('%s already exists. Overwrite it?', $provider->path());
@@ -174,86 +139,14 @@ final class CiInitCommand extends Command
         return $this->providers->get($name);
     }
 
-    private function directory(InputInterface $input): string
+    private function summarize(SymfonyStyle $ui, Provider $provider, PipelineContext $context): void
     {
-        $option = $input->getOption('working-dir');
-        $directory = is_string($option) && '' !== $option ? $option : getcwd();
-
-        if (false === $directory || !is_dir($directory)) {
-            throw new InvalidInputException(sprintf('The directory "%s" does not exist.', (string) $directory));
-        }
-
-        $resolved = realpath($directory);
-
-        return false === $resolved ? $directory : $resolved;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function phpVersions(InputInterface $input): array
-    {
-        $versions = $this->values($input, 'php');
-
-        foreach ($versions as $version) {
-            if (1 !== preg_match('/^\d+\.\d+$/', $version)) {
-                throw new InvalidInputException(sprintf('Invalid PHP version "%s". Use the "major.minor" form, e.g. 8.4.', $version));
-            }
-        }
-
-        usort($versions, static fn (string $a, string $b): int => version_compare($a, $b));
-
-        return $versions;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function branches(InputInterface $input): array
-    {
-        $branches = $this->values($input, 'branch');
-
-        foreach ($branches as $branch) {
-            if (1 !== preg_match('~^[A-Za-z0-9][A-Za-z0-9._/-]*$~', $branch)) {
-                throw new InvalidInputException(sprintf('Invalid branch name "%s".', $branch));
-            }
-        }
-
-        return $branches;
-    }
-
-    /**
-     * @return list<string> the unique, non-empty values of an array option
-     */
-    private function values(InputInterface $input, string $option): array
-    {
-        $values = [];
-
-        foreach ((array) $input->getOption($option) as $value) {
-            if (is_string($value) && '' !== trim($value)) {
-                $values[] = trim($value);
-            }
-        }
-
-        return array_values(array_unique($values));
-    }
-
-    private function summarize(
-        SymfonyStyle $ui,
-        Provider $provider,
-        Project $project,
-        string $directory,
-        bool $phpVersionsOverridden,
-    ): void {
-        $phpSource = match (true) {
-            $phpVersionsOverridden => 'from --php',
-            null !== $project->phpConstraint => sprintf('from "php": "%s"', $project->phpConstraint),
-            default => 'default',
-        };
+        $project = $context->project;
+        $options = $context->options;
 
         $rows = [
-            ['Project' => $directory],
-            ['PHP versions' => sprintf('%s <comment>(%s)</comment>', implode(', ', $project->phpVersions), $phpSource)],
+            ['Project' => $context->directory],
+            ['PHP versions' => sprintf('%s <comment>(%s)</comment>', implode(', ', $project->phpVersions), $context->phpSource)],
             ['Extensions' => [] === $project->extensions ? '<comment>none</comment>' : implode(', ', $project->extensions)],
         ];
 
@@ -262,10 +155,21 @@ final class CiInitCommand extends Command
             $rows[] = [$type->label() => [] === $names ? '<comment>not detected</comment>' : implode(', ', $names)];
         }
 
+        $extras = array_keys(array_filter([
+            'coverage' => $options->coverage && null !== $project->coverageTool(),
+            'lowest dependencies' => $options->lowest && $project->usesComposer,
+            'security audit' => $options->audit && $project->usesComposer,
+        ]));
+
+        $rows[] = ['Branches' => implode(', ', $options->branches)];
+        $rows[] = ['Extras' => [] === $extras ? '<comment>none</comment>' : implode(', ', $extras)];
+
         $ui->title(sprintf('AxonPHP CLI · %s', $provider->label()));
 
         if (!$project->usesComposer) {
             $ui->warning('No composer.json found. Generating a minimal pipeline that only lints PHP files.');
+        } elseif ($options->coverage && null === $project->coverageTool()) {
+            $ui->warning('Coverage was requested, but the project has no test runner that can measure it (PHPUnit or Pest).');
         }
 
         $ui->definitionList(...$rows);

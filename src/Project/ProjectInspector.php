@@ -29,6 +29,7 @@ final readonly class ProjectInspector
         $requireDev = $this->packages($manifest, 'require-dev');
         $packages = array_keys($require + $requireDev);
         $constraint = $require['php'] ?? null;
+        $name = $manifest['name'] ?? null;
 
         return new Project(
             $this->versions->resolve($constraint),
@@ -36,6 +37,8 @@ final readonly class ProjectInspector
             $this->catalog->detect($packages),
             true,
             $constraint,
+            is_string($name) ? $name : null,
+            $this->settings($manifest),
         );
     }
 
@@ -105,5 +108,83 @@ final readonly class ProjectInspector
         sort($extensions);
 
         return $extensions;
+    }
+
+    /**
+     * Reads "extra.axonphp". Unlike the rest of composer.json this section is ours,
+     * so a wrong type is reported instead of being silently ignored.
+     *
+     * @param array<mixed> $manifest
+     */
+    private function settings(array $manifest): ProjectSettings
+    {
+        $extra = $manifest['extra'] ?? null;
+        $settings = is_array($extra) ? ($extra['axonphp'] ?? []) : [];
+
+        if (!is_array($settings)) {
+            throw new ProjectException('"extra.axonphp" in composer.json must be an object.');
+        }
+
+        $unknown = array_diff(array_keys($settings), ProjectSettings::KEYS);
+
+        if ([] !== $unknown) {
+            throw new ProjectException(sprintf(
+                'Unknown key "extra.axonphp.%s" in composer.json. Supported keys: %s.',
+                (string) reset($unknown),
+                implode(', ', ProjectSettings::KEYS),
+            ));
+        }
+
+        return new ProjectSettings(
+            $this->stringList($settings, 'php'),
+            $this->stringList($settings, 'branches'),
+            $this->boolean($settings, 'coverage'),
+            $this->boolean($settings, 'lowest'),
+            $this->boolean($settings, 'audit'),
+        );
+    }
+
+    /**
+     * @param array<mixed> $settings
+     *
+     * @return null|list<string>
+     */
+    private function stringList(array $settings, string $key): ?array
+    {
+        $value = $settings[$key] ?? null;
+
+        if (null === $value) {
+            return null;
+        }
+
+        if (!is_array($value) || [] === $value) {
+            throw new ProjectException(sprintf('"extra.axonphp.%s" in composer.json must be a non-empty list of strings.', $key));
+        }
+
+        $list = [];
+
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                throw new ProjectException(sprintf('"extra.axonphp.%s" in composer.json must be a non-empty list of strings.', $key));
+            }
+
+            $list[] = $item;
+        }
+
+        return $list;
+    }
+
+    /**
+     * @param array<mixed> $settings
+     */
+    private function boolean(array $settings, string $key): ?bool
+    {
+        $value = $settings[$key] ?? null;
+
+        if (null !== $value && !is_bool($value)) {
+            throw new ProjectException(sprintf('"extra.axonphp.%s" in composer.json must be true or false.', $key));
+        }
+
+        return $value;
     }
 }

@@ -8,6 +8,7 @@ use AxonPHP\Cli\Project\Project;
 use AxonPHP\Cli\Project\Tool;
 use AxonPHP\Cli\Project\ToolType;
 use AxonPHP\Cli\Provider\GitHubActionsProvider;
+use AxonPHP\Cli\Provider\PipelineOptions;
 use AxonPHP\Cli\Provider\Yaml;
 use AxonPHP\Cli\Tests\ReadsYaml;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -40,7 +41,7 @@ final class GitHubActionsProviderTest extends TestCase
             ],
         );
 
-        $workflow = (new GitHubActionsProvider())->render($project, ['main', 'develop']);
+        $workflow = (new GitHubActionsProvider())->render($project, new PipelineOptions(['main', 'develop']));
 
         self::assertStringStartsWith(Yaml::HEADER."\n", $workflow);
         self::assertSame('CI', self::yaml($workflow, 'name'));
@@ -83,7 +84,7 @@ final class GitHubActionsProviderTest extends TestCase
 
     public function testFallsBackToLintingWhenNoToolsAreInstalled(): void
     {
-        $workflow = (new GitHubActionsProvider())->render(new Project(['8.4']), ['main']);
+        $workflow = (new GitHubActionsProvider())->render(new Project(['8.4']), new PipelineOptions(['main']));
 
         self::assertSame(['tests'], array_keys((array) self::yaml($workflow, 'jobs')));
         self::assertSame(
@@ -98,9 +99,67 @@ final class GitHubActionsProviderTest extends TestCase
 
     public function testSkipsComposerStepsWithoutComposerFile(): void
     {
-        $workflow = (new GitHubActionsProvider())->render(new Project(['8.4'], usesComposer: false), ['main']);
+        $workflow = (new GitHubActionsProvider())->render(new Project(['8.4'], usesComposer: false), new PipelineOptions(['main']));
 
         self::assertStringNotContainsString('composer', $workflow);
         self::assertSame([Yaml::LINT_COMMAND], self::commands(self::yaml($workflow, 'jobs', 'tests', 'steps')));
+    }
+
+    public function testAddsCoverageLowestDependenciesAndAudit(): void
+    {
+        $project = new Project(['8.3', '8.4'], [], [
+            new Tool('PHPUnit', ToolType::Tests, 'vendor/bin/phpunit', 'vendor/bin/phpunit --coverage-clover=coverage.xml'),
+        ]);
+
+        $workflow = (new GitHubActionsProvider())->render($project, new PipelineOptions(['main'], true, true, true));
+
+        self::assertSame(['quality', 'tests', 'coverage'], array_keys((array) self::yaml($workflow, 'jobs')));
+        self::assertSame(['composer audit'], self::commands(self::yaml($workflow, 'jobs', 'quality', 'steps')));
+
+        self::assertSame(
+            [
+                'php' => ['8.3', '8.4'],
+                'dependencies' => ['highest'],
+                'include' => [['php' => '8.3', 'dependencies' => 'lowest']],
+            ],
+            self::yaml($workflow, 'jobs', 'tests', 'strategy', 'matrix'),
+        );
+        self::assertSame(
+            ['dependency-versions' => '${{ matrix.dependencies }}'],
+            self::yaml($workflow, 'jobs', 'tests', 'steps', 3, 'with'),
+        );
+
+        self::assertSame(
+            ['php-version' => '8.4', 'coverage' => 'pcov'],
+            self::yaml($workflow, 'jobs', 'coverage', 'steps', 1, 'with'),
+        );
+        self::assertSame(
+            ['vendor/bin/phpunit --coverage-clover=coverage.xml'],
+            self::commands(self::yaml($workflow, 'jobs', 'coverage', 'steps')),
+        );
+        self::assertSame(
+            ['name' => 'coverage', 'path' => 'coverage.xml'],
+            self::yaml($workflow, 'jobs', 'coverage', 'steps', 4, 'with'),
+        );
+    }
+
+    public function testSkipsCoverageWhenNoToolCanMeasureIt(): void
+    {
+        $project = new Project(['8.4'], [], [new Tool('Codeception', ToolType::Tests, 'vendor/bin/codecept run')]);
+
+        $workflow = (new GitHubActionsProvider())->render($project, new PipelineOptions(coverage: true));
+
+        self::assertSame(['tests'], array_keys((array) self::yaml($workflow, 'jobs')));
+    }
+
+    public function testIgnoresComposerOnlyOptionsWithoutComposerFile(): void
+    {
+        $workflow = (new GitHubActionsProvider())->render(
+            new Project(['8.4'], usesComposer: false),
+            new PipelineOptions(['main'], true, true, true),
+        );
+
+        self::assertSame(['tests'], array_keys((array) self::yaml($workflow, 'jobs')));
+        self::assertSame(['php' => ['8.4']], self::yaml($workflow, 'jobs', 'tests', 'strategy', 'matrix'));
     }
 }

@@ -43,6 +43,14 @@
     "bin": [
         "bin/axonphp"
     ],
+    "extra": {
+        "axonphp": {
+            "branches": ["main", "develop"],
+            "coverage": true,
+            "lowest": true,
+            "audit": true
+        }
+    },
     "config": {
         "sort-packages": true
     },
@@ -50,15 +58,18 @@
         "check": [
             "@cs",
             "@stan",
-            "@test"
+            "@test",
+            "@ci:check"
         ],
+        "ci:check": "@php bin/axonphp ci:check",
         "cs": "php-cs-fixer check --diff",
         "cs:fix": "php-cs-fixer fix",
         "stan": "phpstan analyse --no-progress",
         "test": "phpunit"
     },
     "scripts-descriptions": {
-        "check": "Run code style, static analysis and tests",
+        "check": "Run code style, static analysis, tests and the pipeline check",
+        "ci:check": "Check that the CI workflow matches the project",
         "cs": "Check the code style without changing files",
         "cs:fix": "Fix the code style",
         "stan": "Run PHPStan",

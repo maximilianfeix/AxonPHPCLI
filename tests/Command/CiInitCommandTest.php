@@ -159,7 +159,7 @@ final class CiInitCommandTest extends TestCase
         $exitCode = $tester->execute(['--working-dir' => $this->createProject()], ['interactive' => false]);
 
         self::assertSame(Command::INVALID, $exitCode);
-        self::assertStringContainsString('Pass a provider: github, gitlab.', $tester->getDisplay());
+        self::assertStringContainsString('Pass a provider: github, gitlab, bitbucket.', $tester->getDisplay());
     }
 
     public function testRejectsInvalidInput(): void
@@ -206,6 +206,105 @@ final class CiInitCommandTest extends TestCase
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertStringContainsString('No composer.json found', $tester->getDisplay());
         self::assertFileExists($directory.'/.github/workflows/ci.yml');
+    }
+
+    public function testReadsDefaultsFromComposerExtra(): void
+    {
+        $directory = $this->createProject(self::MANIFEST + [
+            'extra' => ['axonphp' => [
+                'php' => ['8.4'],
+                'branches' => ['trunk'],
+                'coverage' => true,
+                'lowest' => true,
+                'audit' => true,
+            ]],
+        ]);
+        $tester = $this->tester();
+
+        $tester->execute(['provider' => 'github', '--working-dir' => $directory], ['interactive' => false]);
+
+        $display = $tester->getDisplay();
+        self::assertStringContainsString('8.4 (from extra.axonphp)', $display);
+        self::assertStringContainsString('coverage, lowest dependencies, security audit', $display);
+
+        $workflow = self::read($directory.'/.github/workflows/ci.yml');
+        self::assertSame(['trunk'], self::yaml($workflow, 'on', 'push', 'branches'));
+        self::assertSame(['quality', 'tests', 'coverage'], array_keys((array) self::yaml($workflow, 'jobs')));
+        self::assertSame(
+            ['php' => ['8.4'], 'dependencies' => ['highest'], 'include' => [['php' => '8.4', 'dependencies' => 'lowest']]],
+            self::yaml($workflow, 'jobs', 'tests', 'strategy', 'matrix'),
+        );
+    }
+
+    public function testCommandLineOptionsWinOverComposerExtra(): void
+    {
+        $directory = $this->createProject(self::MANIFEST + [
+            'extra' => ['axonphp' => ['php' => ['8.4'], 'branches' => ['trunk'], 'coverage' => true]],
+        ]);
+
+        $this->tester()->execute(
+            [
+                'provider' => 'github',
+                '--working-dir' => $directory,
+                '--php' => ['8.5'],
+                '--branch' => ['main'],
+                '--no-coverage' => true,
+            ],
+            ['interactive' => false],
+        );
+
+        $workflow = self::read($directory.'/.github/workflows/ci.yml');
+        self::assertSame(['main'], self::yaml($workflow, 'on', 'push', 'branches'));
+        self::assertSame(['php' => ['8.5']], self::yaml($workflow, 'jobs', 'tests', 'strategy', 'matrix'));
+        self::assertSame(['quality', 'tests'], array_keys((array) self::yaml($workflow, 'jobs')));
+    }
+
+    public function testWarnsWhenCoverageCannotBeMeasured(): void
+    {
+        $directory = $this->createProject(['require-dev' => ['phpstan/phpstan' => '^2.0']]);
+        $tester = $this->tester();
+
+        $tester->execute(
+            ['provider' => 'github', '--working-dir' => $directory, '--coverage' => true],
+            ['interactive' => false],
+        );
+
+        self::assertStringContainsString(
+            'no test runner that can measure it',
+            (string) preg_replace('/\s+/', ' ', $tester->getDisplay()),
+        );
+    }
+
+    public function testRejectsInvalidSettingsInComposerExtra(): void
+    {
+        $cases = [
+            'must be true or false' => ['coverage' => 'yes'],
+            'must be a non-empty list of strings' => ['branches' => 'main'],
+            'Unknown key "extra.axonphp.colour"' => ['colour' => 'purple'],
+        ];
+
+        foreach ($cases as $message => $settings) {
+            $tester = $this->tester();
+            $directory = $this->createProject(['extra' => ['axonphp' => $settings]]);
+
+            self::assertSame(
+                Command::FAILURE,
+                $tester->execute(['provider' => 'github', '--working-dir' => $directory], ['interactive' => false]),
+            );
+            self::assertStringContainsString($message, (string) preg_replace('/\s+/', ' ', $tester->getDisplay()));
+        }
+    }
+
+    public function testRejectsUnsafeValuesFromComposerExtra(): void
+    {
+        $tester = $this->tester();
+        $directory = $this->createProject(['extra' => ['axonphp' => ['branches' => ["main\n"]]]]);
+
+        self::assertSame(
+            Command::INVALID,
+            $tester->execute(['provider' => 'github', '--working-dir' => $directory], ['interactive' => false]),
+        );
+        self::assertStringContainsString('Invalid branch name', $tester->getDisplay());
     }
 
     private function tester(): CommandTester

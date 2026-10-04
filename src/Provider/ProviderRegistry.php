@@ -20,7 +20,15 @@ final class ProviderRegistry
 
     public static function default(): self
     {
-        return new self(new GitHubActionsProvider(), new GitLabCiProvider());
+        return new self(new GitHubActionsProvider(), new GitLabCiProvider(), new BitbucketPipelinesProvider());
+    }
+
+    /**
+     * @return list<Provider>
+     */
+    public function all(): array
+    {
+        return array_values($this->providers);
     }
 
     public function get(string $name): Provider

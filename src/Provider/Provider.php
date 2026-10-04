@@ -26,8 +26,5 @@ interface Provider
      */
     public function path(): string;
 
-    /**
-     * @param list<string> $branches branches whose pushes trigger the pipeline
-     */
-    public function render(Project $project, array $branches): string;
+    public function render(Project $project, PipelineOptions $options): string;
 }
