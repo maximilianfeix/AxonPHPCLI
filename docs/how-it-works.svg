@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 960 360" width="960" height="360" role="img" aria-labelledby="title desc">
+  <title id="title">From composer.json to a CI pipeline</title>
+  <desc id="desc">AxonPHP reads PHP constraints, extensions and development tools from composer.json, derives a PHP 8.2–8.5 matrix, and writes the pipeline file for the selected CI provider: GitHub Actions, GitLab CI or Bitbucket Pipelines.</desc>
+  <rect width="960" height="360" rx="12" fill="#1E2140"/>
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#E2E4EF">
+    <text x="24" y="48">01 / READ</text>
+    <text x="360" y="48">02 / DERIVE</text>
+    <text x="648" y="48">03 / WRITE</text>
+  </g>
+  <g fill="none" stroke="#8892BF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="24" y="72" width="288" height="264" rx="8"/>
+    <rect x="360" y="72" width="240" height="264" rx="8"/>
+    <rect x="648" y="72" width="288" height="264" rx="8"/>
+    <path d="M24 144 H312 M360 144 H600 M648 144 H936"/>
+    <path d="M324 204 H348 M342 198 L348 204 L342 210"/>
+    <path d="M612 204 H636 M630 198 L636 204 L630 210"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#FFFFFF">
+    <text x="40" y="116" font-size="20" font-weight="700">composer.json</text>
+    <g font-size="15" xml:space="preserve" fill="#E2E4EF">
+      <text x="40" y="174">"require": {</text>
+      <text x="58" y="194">"php": "^8.2",</text>
+      <text x="58" y="214">"ext-intl": "*"</text>
+      <text x="40" y="234">},</text>
+      <text x="40" y="254">"require-dev": {</text>
+      <text x="58" y="274">"phpunit/phpunit": "^11",</text>
+      <text x="58" y="294">"phpstan/phpstan": "^2"</text>
+      <text x="40" y="314">}</text>
+    </g>
+  </g>
+  <g transform="translate(372 80) scale(0.5)">
+    <rect x="12" y="24" width="104" height="80" rx="40" fill="#4F5B93"/>
+    <g fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M36 88 L58 40 L80 88"/>
+      <path d="M46 68 H94"/>
+    </g>
+    <circle cx="94" cy="68" r="6" fill="#FFFFFF"/>
+  </g>
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <g font-size="20" font-weight="700" fill="#FFFFFF">
+      <text x="444" y="116">AxonPHP</text>
+      <text x="664" y="116">Pipeline file</text>
+    </g>
+    <g font-size="15" fill="#E2E4EF">
+      <text x="376" y="176">PHP MATRIX</text>
+      <text x="376" y="228">EXTENSIONS</text>
+      <text x="376" y="280">TOOLS</text>
+    </g>
+    <g font-size="17" fill="#FFFFFF">
+      <text x="376" y="200">PHP 8.2–8.5</text>
+      <text x="376" y="252">intl</text>
+      <text x="376" y="304">PHPUnit, PHPStan</text>
+    </g>
+    <g font-size="17" font-weight="600" fill="#FFFFFF">
+      <text x="664" y="176">GitHub Actions</text>
+      <text x="664" y="228">GitLab CI</text>
+      <text x="664" y="280">Bitbucket Pipelines</text>
+    </g>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#E2E4EF">
+    <text x="664" y="200">.github/workflows/ci.yml</text>
+    <text x="664" y="252">.gitlab-ci.yml</text>
+    <text x="664" y="304">bitbucket-pipelines.yml</text>
+  </g>
+</svg>

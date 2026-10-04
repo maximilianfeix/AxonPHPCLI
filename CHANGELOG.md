@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ci:check` command: compares the committed pipeline with what the project
+  needs now, prints the difference and exits with 1 when they differ.
+- `inspect` command: shows the detected PHP versions, extensions, tools and
+  options as text or JSON without writing anything.
+- Bitbucket Pipelines provider (`ci:init bitbucket`).
+- `--coverage` adds a code coverage job on the newest PHP version (PHPUnit or
+  Pest) and keeps `coverage.xml` as an artifact.
+- `--lowest` also tests the lowest allowed dependencies on the oldest PHP
+  version.
+- `--audit` adds a `composer audit` step.
+- Pipeline options can be stored under `extra.axonphp` in `composer.json`.
+  Command line options win over the stored ones.
+- Detection of Rector, Deptrac, ECS and Codeception.
+- A website at https://maximilianfeix.github.io/AxonPHPCLI/, built from the
+  same code that renders the pipelines (`composer site`).
+- A logo, a new banner, an animated terminal demo and a how-it-works diagram.
+
+### Changed
+
+- The summary printed by `ci:init` lists the trigger branches and the enabled
+  extras.
+- `Provider::render()` takes a `PipelineOptions` object instead of the list of
+  branches.
+
+### Fixed
+
+- A branch name or PHP version ending in a newline was accepted.
+
 ## [0.2.0] - 2026-10-04
 
 ### Added

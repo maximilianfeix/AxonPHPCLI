@@ -12,6 +12,12 @@
         </testsuite>
     </testsuites>
 
+    <php>
+        <!-- A fixed terminal width keeps assertions on command output independent of where the tests run. -->
+        <env name="COLUMNS" value="160" force="true"/>
+        <env name="LINES" value="50" force="true"/>
+    </php>
+
     <source>
         <include>
             <directory>src</directory>

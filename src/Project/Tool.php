@@ -9,9 +9,13 @@ namespace AxonPHP\Cli\Project;
  */
 final readonly class Tool
 {
+    /**
+     * @param ?string $coverageCommand the command that also writes coverage.xml, for tools that can measure coverage
+     */
     public function __construct(
         public string $name,
         public ToolType $type,
         public string $command,
+        public ?string $coverageCommand = null,
     ) {}
 }

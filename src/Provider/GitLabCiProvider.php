@@ -6,12 +6,11 @@ namespace AxonPHP\Cli\Provider;
 
 use AxonPHP\Cli\Project\Project;
 use AxonPHP\Cli\Project\Tool;
+use AxonPHP\Cli\Project\ToolCatalog;
 use AxonPHP\Cli\Project\ToolType;
 
 final class GitLabCiProvider implements Provider
 {
-    private const EXTENSION_INSTALLER = 'https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions';
-
     public function name(): string
     {
         return 'gitlab';
@@ -27,25 +26,36 @@ final class GitLabCiProvider implements Provider
         return '.gitlab-ci.yml';
     }
 
-    public function render(Project $project, array $branches): string
+    public function render(Project $project, PipelineOptions $options): string
     {
-        $qualityTools = $project->tools(ToolType::CodeStyle, ToolType::StaticAnalysis);
+        $qualityTools = $project->tools(ToolType::StaticAnalysis, ToolType::CodeStyle);
+        $audit = $options->audit && $project->usesComposer;
+        $withQuality = [] !== $qualityTools || $audit;
+        $coverageTool = $options->coverage ? $project->coverageTool() : null;
 
         $sections = [
             Yaml::HEADER,
-            $this->stages([] !== $qualityTools),
-            $this->workflow($branches),
+            $this->stages($withQuality),
+            $this->workflow($options->branches),
         ];
 
         if ($project->usesComposer) {
             $sections[] = $this->composerDefaults($project);
         }
 
-        if ([] !== $qualityTools) {
-            $sections[] = $this->qualityJob($project, $qualityTools);
+        if ($withQuality) {
+            $sections[] = $this->qualityJob($project, $qualityTools, $audit);
         }
 
         $sections[] = $this->testsJob($project);
+
+        if ($options->lowest && $project->usesComposer) {
+            $sections[] = $this->lowestJob($project);
+        }
+
+        if (null !== $coverageTool) {
+            $sections[] = $this->coverageJob($project, $coverageTool);
+        }
 
         return implode("\n\n", $sections)."\n";
     }
@@ -64,8 +74,8 @@ final class GitLabCiProvider implements Provider
     }
 
     /**
-     * Runs merge request pipelines plus branch pipelines for the given branches,
-     * so a push to a branch with an open merge request does not run twice.
+     * Runs merge request pipelines plus branch pipelines for the given branches.
+     * A push to a branch that has an open merge request only runs the merge request pipeline.
      *
      * @param list<string> $branches
      */
@@ -75,6 +85,8 @@ final class GitLabCiProvider implements Provider
             'workflow:',
             '  rules:',
             "    - if: \$CI_PIPELINE_SOURCE == 'merge_request_event'",
+            '    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS',
+            '      when: never',
             '    - if: $CI_COMMIT_TAG',
         ];
 
@@ -87,9 +99,7 @@ final class GitLabCiProvider implements Provider
 
     private function composerDefaults(Project $project): string
     {
-        $extensions = implode(' ', ['@composer', 'zip', ...$project->extensions]);
-
-        return implode("\n", [
+        $lines = [
             'variables:',
             '  COMPOSER_ALLOW_SUPERUSER: '.Yaml::quote('1'),
             '  COMPOSER_NO_INTERACTION: '.Yaml::quote('1'),
@@ -104,35 +114,44 @@ final class GitLabCiProvider implements Provider
             '    paths:',
             '      - .composer-cache/',
             '  before_script:',
-            '    - curl -sSLf -o /usr/local/bin/install-php-extensions '.self::EXTENSION_INSTALLER,
-            '    - chmod +x /usr/local/bin/install-php-extensions',
-            '    - install-php-extensions '.$extensions,
-            '    - composer install --prefer-dist --no-progress',
-        ]);
-    }
-
-    /**
-     * @param non-empty-list<Tool> $tools
-     */
-    private function qualityJob(Project $project, array $tools): string
-    {
-        $lines = [
-            'quality:',
-            '  stage: quality',
-            sprintf('  image: php:%s-cli', $project->latestPhpVersion()),
-            '  script:',
         ];
 
-        foreach ($tools as $tool) {
-            $lines[] = '    - '.$tool->command;
+        foreach ([...Yaml::dockerSetup($project->extensions), Yaml::INSTALL_COMMAND] as $command) {
+            $lines[] = '    - '.$command;
         }
 
         return implode("\n", $lines);
     }
 
+    /**
+     * @param list<Tool> $tools
+     */
+    private function qualityJob(Project $project, array $tools, bool $audit): string
+    {
+        $script = array_map(static fn (Tool $tool): string => $tool->command, $tools);
+
+        if ($audit) {
+            array_unshift($script, Yaml::AUDIT_COMMAND);
+        }
+
+        return implode("\n", [
+            'quality:',
+            '  stage: quality',
+            sprintf('  image: php:%s-cli', $project->latestPhpVersion()),
+            '  script:',
+            ...$this->items($script),
+        ]);
+    }
+
     private function testsJob(Project $project): string
     {
-        $lines = [
+        $script = Yaml::testCommands($project);
+
+        if ($project->usesComposer) {
+            array_unshift($script, 'composer validate --strict');
+        }
+
+        return implode("\n", [
             'tests:',
             '  stage: test',
             '  image: php:${PHP_VERSION}-cli',
@@ -140,22 +159,50 @@ final class GitLabCiProvider implements Provider
             '    matrix:',
             '      - PHP_VERSION: '.Yaml::inlineList($project->phpVersions),
             '  script:',
-        ];
+            ...$this->items($script),
+        ]);
+    }
 
-        if ($project->usesComposer) {
-            $lines[] = '    - composer validate --strict';
-        }
+    /**
+     * The lowest dependencies only need to hold on the oldest PHP version the project supports.
+     */
+    private function lowestJob(Project $project): string
+    {
+        return implode("\n", [
+            'tests:lowest:',
+            '  stage: test',
+            sprintf('  image: php:%s-cli', $project->oldestPhpVersion()),
+            // Replaces the default before_script: installing from the lock file first could fail on this PHP version.
+            '  before_script:',
+            ...$this->items([...Yaml::dockerSetup($project->extensions), Yaml::LOWEST_COMMAND]),
+            '  script:',
+            ...$this->items(Yaml::testCommands($project)),
+        ]);
+    }
 
-        $tools = $project->tools(ToolType::Tests);
+    private function coverageJob(Project $project, Tool $tool): string
+    {
+        return implode("\n", [
+            'coverage:',
+            '  stage: test',
+            sprintf('  image: php:%s-cli', $project->latestPhpVersion()),
+            '  script:',
+            ...$this->items(['install-php-extensions pcov', (string) $tool->coverageCommand]),
+            // Matches the summary line of both PHPUnit ("Lines: 91.30%") and Pest ("Total: 91.3 %").
+            "  coverage: '/^\\s*(?:Lines|Total):\\s*\\d+\\.\\d+\\s*%/'",
+            '  artifacts:',
+            '    paths:',
+            '      - '.ToolCatalog::COVERAGE_REPORT,
+        ]);
+    }
 
-        foreach ($tools as $tool) {
-            $lines[] = '    - '.$tool->command;
-        }
-
-        if ([] === $tools) {
-            $lines[] = '    - '.Yaml::LINT_COMMAND;
-        }
-
-        return implode("\n", $lines);
+    /**
+     * @param list<string> $commands
+     *
+     * @return list<string>
+     */
+    private function items(array $commands): array
+    {
+        return array_map(static fn (string $command): string => '    - '.$command, $commands);
     }
 }

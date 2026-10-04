@@ -14,6 +14,8 @@ final readonly class Project
      * @param list<string> $extensions    PHP extensions the project requires, without the "ext-" prefix
      * @param list<Tool>   $tools
      * @param ?string      $phpConstraint the raw "php" constraint from composer.json, if any
+     * @param ?string      $name          the Composer package name, if any
+     * @param bool         $phpResolved   false when the constraint matched no known PHP version and the defaults are used
      */
     public function __construct(
         public array $phpVersions,
@@ -21,6 +23,9 @@ final readonly class Project
         public array $tools = [],
         public bool $usesComposer = true,
         public ?string $phpConstraint = null,
+        public ?string $name = null,
+        public ProjectSettings $settings = new ProjectSettings(),
+        public bool $phpResolved = true,
     ) {}
 
     /**
@@ -28,20 +33,25 @@ final readonly class Project
      */
     public function withPhpVersions(array $phpVersions): self
     {
-        return new self($phpVersions, $this->extensions, $this->tools, $this->usesComposer, $this->phpConstraint);
+        return new self(
+            $phpVersions,
+            $this->extensions,
+            $this->tools,
+            $this->usesComposer,
+            $this->phpConstraint,
+            $this->name,
+            $this->settings,
+        );
     }
 
     public function latestPhpVersion(): string
     {
-        $latest = null;
+        return $this->extremePhpVersion('>') ?? PhpVersionResolver::DEFAULT[count(PhpVersionResolver::DEFAULT) - 1];
+    }
 
-        foreach ($this->phpVersions as $version) {
-            if (null === $latest || version_compare($version, $latest, '>')) {
-                $latest = $version;
-            }
-        }
-
-        return $latest ?? PhpVersionResolver::DEFAULT[count(PhpVersionResolver::DEFAULT) - 1];
+    public function oldestPhpVersion(): string
+    {
+        return $this->extremePhpVersion('<') ?? PhpVersionResolver::DEFAULT[0];
     }
 
     /**
@@ -53,5 +63,35 @@ final readonly class Project
             $this->tools,
             static fn (Tool $tool): bool => in_array($tool->type, $types, true),
         ));
+    }
+
+    /**
+     * The test runner that can measure code coverage, if the project has one.
+     */
+    public function coverageTool(): ?Tool
+    {
+        foreach ($this->tools(ToolType::Tests) as $tool) {
+            if (null !== $tool->coverageCommand) {
+                return $tool;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param '<'|'>' $operator
+     */
+    private function extremePhpVersion(string $operator): ?string
+    {
+        $extreme = null;
+
+        foreach ($this->phpVersions as $version) {
+            if (null === $extreme || version_compare($version, $extreme, $operator)) {
+                $extreme = $version;
+            }
+        }
+
+        return $extreme;
     }
 }
